@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace DragonResonance.Localizer
 {
-	public class LocalizableEndpoint : PossumBehaviour
+	public class LegacyLocalizableEndpoint : PossumBehaviour
 	{
 		[SerializeField] private bool _autoTranslateOnEnable = true;
 		[SerializeField] private bool _autoTranslateOnLanguageChange = true;

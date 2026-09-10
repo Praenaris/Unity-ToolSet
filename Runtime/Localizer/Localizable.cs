@@ -2,54 +2,18 @@
 
 
 using Cysharp.Threading.Tasks;
-using DragonResonance.Attributes;
-using DragonResonance.Localizer;
+using DragonResonance.Behaviours;
+using System.Text.RegularExpressions;
+using UnityEngine.Events;
 using UnityEngine;
 
 
-public class BuildLocalizableEndpoint : LegacyLocalizableEndpoint
+namespace DragonResonance.Localizer
 {
-	[SerializeField] private bool _enableEditorTemplate = false;
-	[ShowIf(nameof(_enableEditorTemplate))] [SerializeField] protected string _localizationEditorTemplate = "This is a editor {TEST}";
-
-	[SerializeField] private bool _enableDevelopmentTemplate = false;
-	[ShowIf(nameof(_enableDevelopmentTemplate))] [SerializeField] protected string _localizationDevelopmentTemplate = "This is a development {TEST}";
-
-	[SerializeField] private bool _enableDemoTemplate = false;
-	[ShowIf(nameof(_enableDemoTemplate))] [SerializeField] protected string _localizationDemoTemplate = "This is a demo {TEST}";
-
-
-	#if UNITY_EDITOR
-
-		public override void Localize()
-		{
-			if (_enableEditorTemplate)
-				Localizer.Localize(_localizationEditorTemplate, OnLocalize).Forget();
-			else
-				base.Localize();
-		}
-
-	#elif DEVELOPMENT_BUILD
-
-		public override void Localize()
-		{
-			if (_enableDevelopmentTemplate)
-				Localizer.Localize(_localizationDevelopmentTemplate, OnLocalize).Forget();
-			else
-				base.Localize();
-		}
-
-	#elif DEMO_BUILD
-
-		public override void Localize()
-		{
-			if (_enableDemoTemplate)
-				Localizer.Localize(_localizationDemoTemplate, OnLocalize).Forget();
-			else
-				base.Localize();
-		}
-
-	#endif
+	public class Localizable : PossumBehaviour
+	{
+		//
+	}
 }
 
 

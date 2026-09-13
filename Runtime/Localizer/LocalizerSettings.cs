@@ -15,6 +15,7 @@ namespace DragonResonance.Localizer
 		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
 		public SResourceSource[] ResourceSources = { };
 		public SStreamingSource[] StreamingSources = { };
+		public LocalizationDataSource[] LocalizationDataSources = { };
 
 		public SystemLanguage SystemLanguage => Application.systemLanguage;
 		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);

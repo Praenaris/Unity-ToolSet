@@ -1,9 +1,6 @@
 #if ENABLE_LOCALIZER
 
 
-using System;
-
-
 namespace DragonResonance.Localizer
 {
 	public enum LocalizationDataType

@@ -11,9 +11,18 @@ namespace DragonResonance.Localizer
 	public struct LocalizationDataSource
 	{
 		public LocalizationDataType Type;
-		public TextAsset Asset;
-		public string Path;
+		[SerializeField] internal TextAsset _asset;
+		[SerializeField] internal string _path;
 		public string Url;
+
+
+		public string Path => this.Type switch {
+		#if UNITY_EDITOR
+			LocalizationDataType.TextAsset => UnityEditor.AssetDatabase.GetAssetPath(_asset),
+		#endif
+			LocalizationDataType.StreamingAsset => System.IO.Path.Join(Application.streamingAssetsPath, _path),
+			_ => null
+		};
 	}
 }
 

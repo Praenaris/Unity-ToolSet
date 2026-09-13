@@ -1,6 +1,7 @@
 using DragonResonance.Logging;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using System.Threading;
 using System;
 using UnityEngine.Networking;
@@ -14,15 +15,15 @@ namespace Praenaris.Fileman
 		#region Local
 
 		#if UNITY_EDITOR
-			public static async Awaitable WriteToEditorAsset(string content, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
+			public static async Task WriteToEditorAsset(string content, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
 				await WriteToEditorAsset(content, targetAsset, Encoding.UTF8, cancellationToken);
-			public static async Awaitable WriteToEditorAsset(string content, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
+			public static async Task WriteToEditorAsset(string content, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
 				await WriteToFile(content, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
 		#endif
 
-			public static async Awaitable WriteToFile(string content, string targetPath, CancellationToken cancellationToken = default) =>
+			public static async Task WriteToFile(string content, string targetPath, CancellationToken cancellationToken = default) =>
 				await WriteToFile(content, targetPath, Encoding.UTF8, cancellationToken);
-			public static async Awaitable WriteToFile(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default) =>
+			public static async Task WriteToFile(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default) =>
 				await File.WriteAllTextAsync(targetPath, content, encoding, cancellationToken);
 
 		#endregion
@@ -31,15 +32,15 @@ namespace Praenaris.Fileman
 		#region Online
 
 		#if UNITY_EDITOR
-			public static async Awaitable FetchToEditorAsset(string url, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
+			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
 				await FetchToEditorAsset(url, targetAsset, Encoding.UTF8, cancellationToken);
-			public static async Awaitable FetchToEditorAsset(string url, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
+			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
 				await FetchToFile(url, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
 		#endif
 
-			public static async Awaitable FetchToFile(string url, string targetPath, CancellationToken cancellationToken = default) =>
+			public static async Task FetchToFile(string url, string targetPath, CancellationToken cancellationToken = default) =>
 				await FetchToFile(url, targetPath, Encoding.UTF8, cancellationToken);
-			public static async Awaitable FetchToFile(string url, string targetPath, Encoding encoding, CancellationToken cancellationToken = default)
+			public static async Task FetchToFile(string url, string targetPath, Encoding encoding, CancellationToken cancellationToken = default)
 			{
 				string content = await FetchWebResource(url, cancellationToken);
 				if (content == null) return;
@@ -47,7 +48,7 @@ namespace Praenaris.Fileman
 			}
 
 
-			public static async Awaitable<string> FetchWebResource(string url, CancellationToken cancellationToken = default)
+			public static async Task<string> FetchWebResource(string url, CancellationToken cancellationToken = default)
 			{
 				Log.Info($"Retrieving source {url} ...");
 				using UnityWebRequest request = UnityWebRequest.Get(url);

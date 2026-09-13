@@ -1,53 +1,27 @@
-#if ENABLE_PREFABRICATOR
-
-
-using DragonResonance.Logging;
-using Praenaris;
+using DragonResonance.Behaviours;
 using System.Threading.Tasks;
-using UnityEngine.Scripting;
-using UnityEngine;
+using System;
 
 
-namespace DragonResonance.Prefabricator
+namespace Praenaris
 {
-	[Preserve]
-	public class Prefabricator : ASubsystem<Prefabricator, PrefabricatorSettings>
+	public abstract class ASubsystem<TSelf, TSettings>
+		where TSelf : ASubsystem<TSelf, TSettings>
+		where TSettings : SingletonScriptableObject<TSettings>
 	{
-		private static readonly TaskCompletionSource<bool> _spawning = new();
+		protected static TSettings _settings = null;
+		// ReSharper disable once StaticMemberInGenericType
+		protected static readonly TaskCompletionSource<bool> _starting = new();
 
 
-		#region Events
+		#region Inheritables
 
-			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-			private static void Initialize() => Startup(onStarted: Spawn);
-
-		#endregion
-
-
-		#region Publics
-
-			public static async Task Spawn()
+			protected static async void Startup(Func<Task> onStarting = null, Func<Task> onStarted = null)
 			{
-				Log.Info("Spawning...");
-				await _starting.Task;
-
-				foreach (SPrefabricable item in _settings.Items) {
-					if (item.Prefab == null) {
-						Log.Warning("An empty prefab entry was skipped!");
-						continue;
-					}
-
-					for (int itemIndex = 0; itemIndex < item.Amount; itemIndex++) {
-						GameObject instance = Object.Instantiate(item.Prefab);
-						instance.name = item.Prefab.name;
-
-						if (item.Persistent)
-							Object.DontDestroyOnLoad(instance);
-					}
-				}
-
-				_spawning.TrySetResult(true);
-				Log.Info("Spawned!");
+				_settings = await SingletonScriptableObject<TSettings>.GetInstanceAsync();
+				if (onStarting != null) await onStarting();
+				_starting.TrySetResult(true);
+				if (onStarted != null) await onStarted();
 			}
 
 		#endregion
@@ -55,14 +29,11 @@ namespace DragonResonance.Prefabricator
 
 		#region Properties
 
-			public static Task SpawningTask => _spawning.Task;
+			public static Task<bool> StartingTask => _starting.Task;
 
 		#endregion
 	}
 }
-
-
-#endif
 
 
 /*                                                                                                                */

@@ -2,12 +2,13 @@
 
 
 using Cysharp.Threading.Tasks;
-using DragonResonance.Behaviours;
 using DragonResonance.Extensions;
+using Praenaris;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Threading;
 using System;
 using Tabernero.SimpleJSON;
@@ -18,12 +19,10 @@ using UnityEngine;
 namespace DragonResonance.Savedata
 {
 	[Preserve]
-	public partial class Savedata : PersistentSingletonPossumBehaviour<Savedata>
+	public partial class Savedata : ASubsystem<Savedata, SavedataSettings>
 	{
-		private static SavedataSettings _settings = null;
 		private static readonly Dictionary<string, JSONNode> _data = new();
 		private static readonly Dictionary<string, Action<JSONNode>> _events = new();
-		private static readonly UniTaskCompletionSource _starting = new();
 		private static readonly UniTaskCompletionSource _loading = new();
 		private static readonly SemaphoreSlim _saveSemaphore = new(1, 1);
 
@@ -31,15 +30,10 @@ namespace DragonResonance.Savedata
 		#region Events
 
 			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-			private static void Initialize() => OnStartup();
+			private static void Initialize() => Startup(onStarted: Start);
 
-			private static async void OnStartup()
+			private static async Task Start()
 			{
-				Logging.Log.Info("Starting up...");
-				_settings = await SavedataSettings.GetInstanceAsync();
-				_starting.TrySetResult();
-				Logging.Log.Info("Started!");
-
 				if (_settings.LoadOnStart)
 					await Load();
 			}
@@ -175,7 +169,6 @@ namespace DragonResonance.Savedata
 			public static Dictionary<string, JSONNode> Data => _data;
 			public static Dictionary<string, Action<JSONNode>> Events => _events;
 
-			public static UniTaskCompletionSource Starting => _starting;
 			public static UniTaskCompletionSource Loading => _loading;
 
 			public static IEnumerable<string> FilePaths => _settings.Overrides

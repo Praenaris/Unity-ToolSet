@@ -25,13 +25,6 @@ namespace Praenaris
 			}
 
 		#endregion
-
-
-		#region Properties
-
-			public static Task<bool> StartingTask => _starting.Task;
-
-		#endregion
 	}
 }
 

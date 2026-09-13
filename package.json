@@ -1,11 +1,11 @@
 {
   "name": "com.praenaris.toolset",
-  "version": "4.3.4",
+  "version": "4.4.0",
   "displayName": "ToolSet",
   "unity": "6000.0",
   "license": "Apache-2.0",
   "dependencies": {
-    "com.praenaris.devkit": "4.3.2",
+    "com.praenaris.devkit": "4.3.4",
     "dev.tabernero.simplejson": "2026.2.3",
     "com.cysharp.unitask": "2.5.11"
   },

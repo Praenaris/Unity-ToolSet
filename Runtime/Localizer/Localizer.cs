@@ -5,10 +5,12 @@ using Cysharp.Threading.Tasks;
 using DragonResonance.Databases;
 using DragonResonance.Extensions;
 using DragonResonance.Logging;
+using Praenaris;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
+using System.Threading.Tasks;
 using System;
 using UnityEngine.Events;
 using UnityEngine.Scripting;
@@ -18,12 +20,10 @@ using UnityEngine;
 namespace DragonResonance.Localizer
 {
 	[Preserve]
-	public partial class Localizer
+	public partial class Localizer : ASubsystem<Localizer, LocalizerSettings>
 	{
-		private static LocalizerSettings _settings = null;
 		private static SystemLanguage _currentLanguage = SystemLanguage.Unknown;
 		private static readonly HeaderedSheet<string> _dataSheet = new();
-		private static readonly UniTaskCompletionSource _starting = new();
 
 		public static event Action OnLanguageChange = null;
 
@@ -31,21 +31,15 @@ namespace DragonResonance.Localizer
 		#region Events
 
 			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-			private static void Initialize() => OnStartup();
+			private static void Initialize() => Startup(onStarting: Start);
 
-			private static async void OnStartup()
+			private static async Task Start()
 			{
-				Log.Info("Starting up...");
-
-				_settings = await LocalizerSettings.GetInstanceAsync();
 				#if ENABLE_UNITYWEBREQUEST && (UNITY_EDITOR || DEVELOPMENT_BUILD)
 					await RetrieveOnlineData();
 				#endif
 				await LoadLocalData();
 				_currentLanguage = FirstPreferredLanguage(_currentLanguage);
-				_starting.TrySetResult();
-
-				Log.Info("Started!");
 			}
 
 		#endregion
@@ -122,8 +116,6 @@ namespace DragonResonance.Localizer
 
 			public static SystemLanguage CurrentLanguage => _currentLanguage;
 			public static HeaderedSheet<string> DataSheet => _dataSheet;
-
-			public static UniTaskCompletionSource Starting => _starting;
 
 			public static bool IsDefaultLanguage => (_currentLanguage == _settings.PreferredLanguages.First());
 			public static IEnumerable<string> AvailableLanguageNames => Localizer.AvailableLanguages.Select(language => language.ToString());

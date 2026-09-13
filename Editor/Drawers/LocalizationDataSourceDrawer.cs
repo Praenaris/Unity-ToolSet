@@ -14,7 +14,7 @@ namespace DragonResonance.Editor.Drawers
 	[CustomPropertyDrawer(typeof(LocalizationDataSource))]
 	public class LocalizationDataSourceDrawer : PropertyDrawer
 	{
-		private const float SPACING = 8f;
+		private const float SPACING = 2f;
 		private const float TYPE_PADDING = 16f;
 
 		private static readonly GUIContent UrlLabel = new("URL ");

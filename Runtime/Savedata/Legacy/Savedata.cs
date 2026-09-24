@@ -16,10 +16,10 @@ using UnityEngine.Scripting;
 using UnityEngine;
 
 
-namespace Praenaris.Savedata
+namespace Praenaris.SavedataLegacy
 {
 	[Preserve]
-	public partial class Savedata : ASubsystem<Savedata, SavedataSettings>
+	public partial class Savedata : ASubsystem<Savedata, SavedataLegacySettings>
 	{
 		private static readonly Dictionary<string, JSONNode> _data = new();
 		private static readonly Dictionary<string, Action<JSONNode>> _events = new();

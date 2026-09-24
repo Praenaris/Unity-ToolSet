@@ -6,7 +6,7 @@ using System;
 using UnityEngine;
 
 
-namespace Praenaris.Savedata
+namespace Praenaris.SavedataLegacy
 {
 	public partial class Savedata	// Paths
 	{

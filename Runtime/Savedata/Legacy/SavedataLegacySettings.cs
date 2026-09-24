@@ -1,50 +1,20 @@
-#if UNITY_EDITOR
-
-
-using DragonResonance.Editor.Building;
-using UnityEditor;
-
 #if ENABLE_SAVEDATA
-using Praenaris.Savedata;
-#endif
 
 
-namespace DragonResonance.Editor.Settings
+using DragonResonance.Behaviours;
+using UnityEngine;
+
+
+namespace Praenaris.SavedataLegacy
 {
-#if ENABLE_SAVEDATA
-	public class SavedataSettingsProvider : AScriptableSettingsProvider<SavedataSettings>
-#else
-	public class SavedataSettingsProvider : AScriptableSettingsProvider
-#endif
+	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata Legacy", fileName = "New Savedata Legacy Settings")]
+	public class SavedataLegacySettings : SingletonScriptableObject<SavedataLegacySettings>
 	{
-		private const string SettingsPath = "Project/Praenaris/Savedata";
-		private const string BuildDefinition = "ENABLE_SAVEDATA";
-
-
-		#region Constructors
-
-			[SettingsProvider]
-			public static SettingsProvider Create() => new SavedataSettingsProvider(SettingsPath, SettingsScope.Project);
-
-			public SavedataSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
-
-		#endregion
-
-
-		#region Inheritables
-
-			protected override void OnBeforeGUI(string searchContext)
-			{
-				#if ENABLE_SAVEDATA
-					if (!EditorGUILayout.Toggle("Enabled", true))
-						BuildDefines.SetDefinitionState(BuildDefinition, false);
-				#else
-					if (EditorGUILayout.Toggle("Enabled", false))
-						BuildDefines.SetDefinitionState(BuildDefinition, true);
-				#endif
-			}
-
-		#endregion
+		public bool LoadOnStart = true;
+		public bool UseCompactData = false;
+		[Min(0)] public int ThreadTimeoutMilliseconds = 0;
+		public string DefaultFilePath = "savedata.json";
+		public SFilePathOverride[] Overrides = { };
 	}
 }
 

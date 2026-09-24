@@ -1,16 +1,11 @@
 #if ENABLE_SAVEDATA
 
 
-using System;
-
-
-namespace Praenaris.Savedata
+namespace Praenaris.SavedataLegacy
 {
-	[Serializable]
-	public struct SFilePathOverride
+	public interface ISavableData
 	{
-		public string FilePath;
-		public string[] Keys;
+		public string Key { get; }
 	}
 }
 

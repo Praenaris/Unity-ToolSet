@@ -3,7 +3,7 @@
 
 using Cysharp.Threading.Tasks;
 using DragonResonance.Extensions;
-using Praenaris;
+using DragonResonance.Logging;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,7 +16,7 @@ using UnityEngine.Scripting;
 using UnityEngine;
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
 	[Preserve]
 	public partial class Savedata : ASubsystem<Savedata, SavedataSettings>
@@ -45,7 +45,7 @@ namespace DragonResonance.Savedata
 
 			public static async UniTask Load()
 			{
-				Logging.Log.Info("Loading...");
+				Log.Info("Loading...");
 				await _starting.Task;
 
 				_data.Clear();
@@ -61,7 +61,7 @@ namespace DragonResonance.Savedata
 				}
 
 				_loading.TrySetResult();
-				Logging.Log.Info("Loaded!");
+				Log.Info("Loaded!");
 			}
 
 
@@ -70,7 +70,7 @@ namespace DragonResonance.Savedata
 				//await _saveSemaphore.WaitAsync();
 				if (!await _saveSemaphore.WaitAsync(_settings.ThreadTimeoutMilliseconds)) return;
 				try {
-					Logging.Log.Info("Saving...");
+					Log.Info("Saving...");
 					await _loading.Task;
 
 					HashSet<string> processedKeys = new();
@@ -104,7 +104,7 @@ namespace DragonResonance.Savedata
 					_saveSemaphore.Release();
 				}
 
-				Logging.Log.Info("Saved!");
+				Log.Info("Saved!");
 			}
 
 

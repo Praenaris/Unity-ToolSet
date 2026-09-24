@@ -5,7 +5,7 @@ using DragonResonance.Behaviours;
 using UnityEngine;
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata", fileName = "New Savedata Settings")]
 	public class SavedataSettings : SingletonScriptableObject<SavedataSettings>

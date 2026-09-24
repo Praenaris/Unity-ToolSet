@@ -7,7 +7,7 @@ using Tabernero.SimpleJSON;
 using UnityEngine;
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
 	public partial class Savedata	// Wrappers
 	{

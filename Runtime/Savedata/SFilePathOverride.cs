@@ -4,7 +4,7 @@
 using System;
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
 	[Serializable]
 	public struct SFilePathOverride

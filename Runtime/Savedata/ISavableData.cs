@@ -1,7 +1,7 @@
 #if ENABLE_SAVEDATA
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
 	public interface ISavableData
 	{

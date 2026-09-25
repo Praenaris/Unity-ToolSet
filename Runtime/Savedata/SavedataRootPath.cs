@@ -1,34 +1,19 @@
 #if ENABLE_SAVEDATA
 
 
-using DragonResonance.Attributes;
-using DragonResonance.Behaviours;
-using UnityEngine;
-
-
 namespace Praenaris.Savedata
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata", fileName = "New Savedata Settings")]
-	public class SavedataSettings : SingletonScriptableObject<SavedataSettings>
+	public enum SavedataRootPath
 	{
-		public bool LoadOnGameStart = true;
-		public bool SaveCompactData = false;
-
-		public SavedataResource[] ResourceOverrides = { };
-		[Header("Fallback Resource")] public SavedataResource FallbackResource = new() {
-			Root = SavedataRootPath.AppData,
-			Company = true,
-			Product = true,
-			RelativePath = "savedata.json",
-			Slotted = true,
-		};
-
-		[Header("Slots")]
-		public bool LimitSlots = false;
-		[ShowIf(nameof(LimitSlots))] [SerializeField] [Min(1)] private int _maxSlots = 3;
-
-
-		public int MaxSlots => LimitSlots ? _maxSlots : -1;
+		AppData,	// %APPDATA% (AppData/Roaming) · ~/.config
+		CommonAppData,	// %PROGRAMDATA% · /usr/share
+		Desktop,	// %USERPROFILE%/Desktop · ~/Desktop
+		GameFolder,	// The folder containing the game's executable (the project root in the Editor)
+		LocalAppData,	// %LOCALAPPDATA% (AppData/Local) · ~/.local/share
+		MyDocuments,	// %USERPROFILE%/Documents · ~/Documents
+		PersistentData,	// Unity's Application.persistentDataPath
+		TemporaryCache,	// Unity's Application.temporaryCachePath
+		UserProfile,	// %USERPROFILE% · ~
 	}
 }
 

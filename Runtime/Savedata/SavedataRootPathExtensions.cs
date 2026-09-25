@@ -1,34 +1,42 @@
 #if ENABLE_SAVEDATA
 
 
-using DragonResonance.Attributes;
-using DragonResonance.Behaviours;
+using System.IO;
+using System;
 using UnityEngine;
 
 
 namespace Praenaris.Savedata
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata", fileName = "New Savedata Settings")]
-	public class SavedataSettings : SingletonScriptableObject<SavedataSettings>
+	public static class SavedataRootPathExtensions
 	{
-		public bool LoadOnGameStart = true;
-		public bool SaveCompactData = false;
+		#region Publics
 
-		public SavedataResource[] ResourceOverrides = { };
-		[Header("Fallback Resource")] public SavedataResource FallbackResource = new() {
-			Root = SavedataRootPath.AppData,
-			Company = true,
-			Product = true,
-			RelativePath = "savedata.json",
-			Slotted = true,
-		};
+			public static string Resolve(this SavedataRootPath rootPath) => rootPath switch {
+				SavedataRootPath.AppData => GetFolderPath(Environment.SpecialFolder.ApplicationData),
+				SavedataRootPath.CommonAppData => GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+				SavedataRootPath.Desktop => GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+				SavedataRootPath.GameFolder => Path.GetDirectoryName(Application.dataPath),
+				SavedataRootPath.LocalAppData => GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+				SavedataRootPath.MyDocuments => GetFolderPath(Environment.SpecialFolder.MyDocuments),
+				SavedataRootPath.PersistentData => Application.persistentDataPath,
+				SavedataRootPath.TemporaryCache => Application.temporaryCachePath,
+				SavedataRootPath.UserProfile => GetFolderPath(Environment.SpecialFolder.UserProfile),
+				_ => Application.persistentDataPath
+			};
 
-		[Header("Slots")]
-		public bool LimitSlots = false;
-		[ShowIf(nameof(LimitSlots))] [SerializeField] [Min(1)] private int _maxSlots = 3;
+		#endregion
 
 
-		public int MaxSlots => LimitSlots ? _maxSlots : -1;
+		#region Privates
+
+			private static string GetFolderPath(Environment.SpecialFolder specialFolder)
+			{
+				string folderPath = Environment.GetFolderPath(specialFolder);
+				return string.IsNullOrEmpty(folderPath) ? Application.persistentDataPath : folderPath;
+			}
+
+		#endregion
 	}
 }
 

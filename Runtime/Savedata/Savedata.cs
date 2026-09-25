@@ -20,7 +20,10 @@ namespace Praenaris.Savedata
 	[Preserve]
 	public partial class Savedata : ASubsystem<Savedata, SavedataSettings>
 	{
-		private static readonly Dictionary<string, JSONNode> _data = new();
+		private const string CurrentSlotKey = "SAVEDATA_CURRENTSLOT";
+
+
+		private static readonly List<JSONNode> _fullData = new();	// The full list
 
 
 		#region Events
@@ -30,14 +33,14 @@ namespace Praenaris.Savedata
 
 			private static async Task Start()
 			{
-				if (_settings.LoadOnStart)
+				if (_settings.LoadOnGameStart)
 					await Load();
 			}
 
 		#endregion
 
 
-		#region Publics
+		#region Publics - ????
 
 			public static async Task Load()
 			{
@@ -60,11 +63,33 @@ namespace Praenaris.Savedata
 		#endregion
 
 
+		#region Publics - ????
+
+			public static bool Get<T>(string key, out T data, T fallback = default)
+			{
+				data = default;
+
+				// TODO
+
+				return false;	// False if the savedata is not ready (not loaded)
+			}
+
+
+			public static bool Set<T>(string key, T data)
+			{
+				// TODO
+
+				return false;	// False if the savedata is not ready (not loaded)
+			}
+
+		#endregion
+
+
 		#region Privates
 
-			private static void Test()
+			private static JSONNode GetSlotData(int slot)
 			{
-				//
+				return (slot < _fullData.Count) ? _fullData[slot] : JSONNode.New();
 			}
 
 		#endregion
@@ -72,7 +97,9 @@ namespace Praenaris.Savedata
 
 		#region Properties
 
-			public static Dictionary<string, JSONNode> Data => _data;
+			public static bool IsReady => false;	// TODO
+			public static int CurrentSlot => PlayerPrefs.GetInt(CurrentSlotKey, 0);
+			public static JSONNode CurrentSlotData => GetSlotData(CurrentSlot);
 
 		#endregion
 	}

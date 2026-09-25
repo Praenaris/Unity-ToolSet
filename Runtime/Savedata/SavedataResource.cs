@@ -1,34 +1,33 @@
 #if ENABLE_SAVEDATA
 
 
-using DragonResonance.Attributes;
-using DragonResonance.Behaviours;
+using System.IO;
+using System;
 using UnityEngine;
 
 
 namespace Praenaris.Savedata
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata", fileName = "New Savedata Settings")]
-	public class SavedataSettings : SingletonScriptableObject<SavedataSettings>
+	[Serializable]
+	public struct SavedataResource
 	{
-		public bool LoadOnGameStart = true;
-		public bool SaveCompactData = false;
-
-		public SavedataResource[] ResourceOverrides = { };
-		[Header("Fallback Resource")] public SavedataResource FallbackResource = new() {
-			Root = SavedataRootPath.AppData,
-			Company = true,
-			Product = true,
-			RelativePath = "savedata.json",
-			Slotted = true,
-		};
-
-		[Header("Slots")]
-		public bool LimitSlots = false;
-		[ShowIf(nameof(LimitSlots))] [SerializeField] [Min(1)] private int _maxSlots = 3;
+		public SavedataRootPath Root;
+		public bool Company;
+		public bool Product;
+		public string RelativePath;
+		public bool Slotted;
 
 
-		public int MaxSlots => LimitSlots ? _maxSlots : -1;
+		public string GetFullPath(int slot) => FormatFullPath(slot.ToString());
+
+		internal string FormatFullPath(string slotId)
+		{
+			string rootPath = Path.Join(this.Root.Resolve(), this.Company ? Application.companyName : null, this.Product ? Application.productName : null);
+			string path = Path.Join(rootPath, ".", this.RelativePath);
+			if (this.Slotted)
+				path = Path.Join(Path.GetDirectoryName(path), $"{Path.GetFileNameWithoutExtension(path)}_{slotId}{Path.GetExtension(path)}");
+			return Path.GetFullPath(path);
+		}
 	}
 }
 

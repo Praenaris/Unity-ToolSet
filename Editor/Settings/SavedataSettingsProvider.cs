@@ -3,6 +3,7 @@
 
 using DragonResonance.Editor.Building;
 using UnityEditor;
+using UnityEngine;
 
 #if ENABLE_SAVEDATA
 using Praenaris.Savedata;
@@ -19,6 +20,18 @@ namespace DragonResonance.Editor.Settings
 	{
 		private const string SettingsPath = "Project/Praenaris/Savedata";
 		private const string BuildDefinition = "ENABLE_SAVEDATA";
+		private const float SeparatorHeight = 1f;
+		private const float SlotRowHeight = 24f;
+		private const float SlotArrowWidth = 24f;
+		private const float FileButtonWidth = 64f;
+		private const int SlotFontSize = 16;
+
+		private static readonly Color SeparatorColor = new(0.5f, 0.5f, 0.5f, 0.5f);
+		private static readonly GUIContent PreviousSlotLabel = new("◀");
+		private static readonly GUIContent NextSlotLabel = new("▶");
+		private static readonly GUIContent LoadLabel = new("Load");
+		private static readonly GUIContent SaveLabel = new("Save");
+		private static GUIStyle _slotStyle_internal = null;	// Caching only, use the property instead
 
 
 		#region Constructors
@@ -43,6 +56,38 @@ namespace DragonResonance.Editor.Settings
 						BuildDefines.SetDefinitionState(BuildDefinition, true);
 				#endif
 			}
+
+			protected override void OnAfterGUI(string searchContext)
+			{
+				EditorGUILayout.Space(SmallPadding);
+				EditorGUI.DrawRect(EditorGUILayout.GetControlRect(false, SeparatorHeight), SeparatorColor);
+				EditorGUILayout.Space(SmallPadding);
+
+				#if ENABLE_SAVEDATA
+					EditorGUILayout.BeginHorizontal();
+					{
+						GUILayout.Button(PreviousSlotLabel, GUILayout.Width(SlotArrowWidth), GUILayout.Height(SlotRowHeight));	// TODO
+						GUILayout.Label($"Slot {Savedata.CurrentSlot}", SlotStyle, GUILayout.Height(SlotRowHeight));
+						GUILayout.Button(NextSlotLabel, GUILayout.Width(SlotArrowWidth), GUILayout.Height(SlotRowHeight));	// TODO
+
+						GUILayout.FlexibleSpace();
+
+						GUILayout.Button(LoadLabel, GUILayout.Width(FileButtonWidth), GUILayout.Height(SlotRowHeight));	// TODO
+						GUILayout.Button(SaveLabel, GUILayout.Width(FileButtonWidth), GUILayout.Height(SlotRowHeight));	// TODO
+					}
+					EditorGUILayout.EndHorizontal();
+				#endif
+			}
+
+		#endregion
+
+
+		#region Properties
+
+			private static GUIStyle SlotStyle => (_slotStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
+				fontSize = SlotFontSize,
+				alignment = TextAnchor.MiddleCenter,
+			});
 
 		#endregion
 	}

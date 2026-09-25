@@ -12,9 +12,9 @@ using Praenaris.Savedata;
 namespace DragonResonance.Editor.Settings
 {
 #if ENABLE_SAVEDATA
-	public class SavedataSettingsProvider : AScriptableSettingsProvider<SavedataSettings>
+	public partial class SavedataSettingsProvider : AScriptableSettingsProvider<SavedataSettings>
 #else
-	public class SavedataSettingsProvider : AScriptableSettingsProvider
+	public partial class SavedataSettingsProvider : AScriptableSettingsProvider
 #endif
 	{
 		private const string SettingsPath = "Project/Praenaris/Savedata";

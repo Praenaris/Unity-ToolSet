@@ -25,7 +25,7 @@ namespace Praenaris.Savedata
 			Company = true,
 			Product = true,
 			RelativePath = "savedata.json",
-			Slotted = true,
+			Slotted = false,
 		};
 		public SavedataResource[] ResourceOverrides = { };
 

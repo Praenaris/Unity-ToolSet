@@ -3,10 +3,10 @@
 
 using DragonResonance.Extensions;
 using DragonResonance.Logging;
+using DragonResonance.Serializables;
+using Praenaris.Tools;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
@@ -18,12 +18,14 @@ using UnityEngine;
 namespace Praenaris.Savedata
 {
 	[Preserve]
-	public partial class Savedata : ASubsystem<Savedata, SavedataSettings>
+	public class Savedata : ASubsystem<Savedata, SavedataSettings>
 	{
 		private const string CurrentSlotKey = "SAVEDATA_CURRENTSLOT";
 
 
-		private static readonly List<JSONNode> _fullData = new();	// The full list
+		private static JSONNode[] _resourcesData = { };
+		private static bool _isReady = false;
+		private static readonly SemaphoreSlim _filesSemaphore = new(1, 1);
 
 
 		#region Events
@@ -42,22 +44,40 @@ namespace Praenaris.Savedata
 
 		#region Publics - ????
 
-			public static async Task Load()
+			public static async Task Load() => await Load(CurrentSlot);
+			public static async Task Load(int slot)
 			{
-				// TODO
+				//await _starting.Task;
+				await _filesSemaphore.WaitAsync();
+				try {
+					Log.Info($"Loading slot {slot}...");
+					_isReady = false;
+					SetCurrentSlot(slot);
+
+					string[] filePaths = _settings.Resources.Select(resource => resource.GetFullPath(slot)).ToArray();
+					_resourcesData = await Task.WhenAll(filePaths.Select(LoadResource));
+
+					_isReady = true;
+					Log.Info($"Slot {slot} loaded!");
+				}
+				finally {
+					_filesSemaphore.Release();
+				}
 			}
 
 
-			public static async Task Save()
+			public static async Task Save() => await Save(CurrentSlot);
+			public static async Task Save(int slot)
 			{
-				// TODO
+				// TODO - use GetSlotData ?
 			}
 
 
-			public static async Task SaveAndReload()
+			public static async Task SaveAndReload() => await SaveAndReload(CurrentSlot);
+			public static async Task SaveAndReload(int slot)
 			{
-				await Save();
-				await Load();
+				await Save(slot);
+				await Load(slot);
 			}
 
 		#endregion
@@ -87,9 +107,29 @@ namespace Praenaris.Savedata
 
 		#region Privates
 
-			private static JSONNode GetSlotData(int slot)
+			private static int GetCurrentSlot() => PlayerPrefs.GetInt(CurrentSlotKey, 0);
+			private static void SetCurrentSlot(int slot) => PlayerPrefs.SetInt(CurrentSlotKey, slot);
+
+			private static async Task<JSONNode> LoadResource(string filePath)
 			{
-				return (slot < _fullData.Count) ? _fullData[slot] : JSONNode.New();
+				Log.Info($"Reading {filePath} ...");
+				try {
+					/*string content = await Fileman.ReadFromFile(filePath);
+					if (string.IsNullOrWhiteSpace(content)) {
+						Log.Info($"No savedata found at \"{filePath}\", starting empty");
+						return JSONNode.New();
+					}
+
+					JSONNode json = JSONNode.Parse(content);
+					if (json is JSONObject) return json;
+
+					Log.Error($"The savedata at \"{filePath}\" is not a JSON object");*/
+					return null;
+				}
+				catch (Exception exception) {
+					Log.Exception(exception, $"Exception loading the savedata at \"{filePath}\"");
+					return null;
+				}
 			}
 
 		#endregion
@@ -97,9 +137,9 @@ namespace Praenaris.Savedata
 
 		#region Properties
 
-			public static bool IsReady => false;	// TODO
-			public static int CurrentSlot => PlayerPrefs.GetInt(CurrentSlotKey, 0);
-			public static JSONNode CurrentSlotData => GetSlotData(CurrentSlot);
+			public static bool IsReady => _isReady;
+			public static int CurrentSlot => GetCurrentSlot();
+			public static IReadOnlyList<JSONNode> ResourcesData => _resourcesData;
 
 		#endregion
 	}

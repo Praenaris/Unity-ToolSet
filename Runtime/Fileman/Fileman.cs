@@ -8,7 +8,7 @@ using UnityEngine.Networking;
 using UnityEngine;
 
 
-namespace Praenaris.Fileman
+namespace Praenaris.Tools
 {
 	public static class Fileman
 	{

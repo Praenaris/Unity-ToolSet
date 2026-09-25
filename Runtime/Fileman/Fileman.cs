@@ -10,9 +10,39 @@ using UnityEngine;
 
 namespace Praenaris.Fileman
 {
-	public class Fileman
+	public static class Fileman
 	{
 		#region Local
+
+			public static bool Exists(string path) => File.Exists(path);
+
+			public static void Delete(string path)
+			{
+				if (File.Exists(path))
+					File.Delete(path);
+			}
+
+
+			public static async Task<string> ReadFromFile(string sourcePath, CancellationToken cancellationToken = default) =>
+				await ReadFromFile(sourcePath, Encoding.UTF8, cancellationToken);
+			public static async Task<string> ReadFromFile(string sourcePath, Encoding encoding, CancellationToken cancellationToken = default)
+			{
+				if (!File.Exists(sourcePath)) return null;
+				return await File.ReadAllTextAsync(sourcePath, encoding, cancellationToken);
+			}
+
+		#if UNITY_EDITOR
+			public static async Task<string> ReadFromEditorAsset(TextAsset sourceAsset, CancellationToken cancellationToken = default) =>
+				await ReadFromEditorAsset(sourceAsset, Encoding.UTF8, cancellationToken);
+			public static async Task<string> ReadFromEditorAsset(TextAsset sourceAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
+				await ReadFromFile(UnityEditor.AssetDatabase.GetAssetPath(sourceAsset), encoding, cancellationToken);
+		#endif
+
+
+			public static async Task WriteToFile(string content, string targetPath, CancellationToken cancellationToken = default) =>
+				await WriteToFile(content, targetPath, Encoding.UTF8, cancellationToken);
+			public static async Task WriteToFile(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default) =>
+				await File.WriteAllTextAsync(targetPath, content, encoding, cancellationToken);
 
 		#if UNITY_EDITOR
 			public static async Task WriteToEditorAsset(string content, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
@@ -21,22 +51,10 @@ namespace Praenaris.Fileman
 				await WriteToFile(content, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
 		#endif
 
-			public static async Task WriteToFile(string content, string targetPath, CancellationToken cancellationToken = default) =>
-				await WriteToFile(content, targetPath, Encoding.UTF8, cancellationToken);
-			public static async Task WriteToFile(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default) =>
-				await File.WriteAllTextAsync(targetPath, content, encoding, cancellationToken);
-
 		#endregion
 
 
 		#region Online
-
-		#if UNITY_EDITOR
-			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
-				await FetchToEditorAsset(url, targetAsset, Encoding.UTF8, cancellationToken);
-			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
-				await FetchToFile(url, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
-		#endif
 
 			public static async Task FetchToFile(string url, string targetPath, CancellationToken cancellationToken = default) =>
 				await FetchToFile(url, targetPath, Encoding.UTF8, cancellationToken);
@@ -46,6 +64,13 @@ namespace Praenaris.Fileman
 				if (content == null) return;
 				await WriteToFile(content, targetPath, encoding, cancellationToken);
 			}
+
+		#if UNITY_EDITOR
+			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
+				await FetchToEditorAsset(url, targetAsset, Encoding.UTF8, cancellationToken);
+			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
+				await FetchToFile(url, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
+		#endif
 
 
 			public static async Task<string> FetchWebResource(string url, CancellationToken cancellationToken = default)

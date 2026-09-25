@@ -3,6 +3,8 @@
 
 using DragonResonance.Attributes;
 using DragonResonance.Behaviours;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -14,7 +16,10 @@ namespace Praenaris.Savedata
 		public bool LoadOnGameStart = true;
 		public bool SaveCompactData = false;
 
-		public SavedataResource[] ResourceOverrides = { };
+		[Header("Slots")]
+		public bool LimitSlots = false;
+		[ShowIf(nameof(LimitSlots))] [SerializeField] [Min(1)] private int _maxSlots = 3;
+
 		[Header("Fallback Resource")] public SavedataResource FallbackResource = new() {
 			Root = SavedataRootPath.AppData,
 			Company = true,
@@ -22,13 +27,11 @@ namespace Praenaris.Savedata
 			RelativePath = "savedata.json",
 			Slotted = true,
 		};
-
-		[Header("Slots")]
-		public bool LimitSlots = false;
-		[ShowIf(nameof(LimitSlots))] [SerializeField] [Min(1)] private int _maxSlots = 3;
+		public SavedataResource[] ResourceOverrides = { };
 
 
 		public int MaxSlots => LimitSlots ? _maxSlots : -1;
+		public IEnumerable<SavedataResource> Resources => ResourceOverrides.Prepend(FallbackResource);
 	}
 }
 

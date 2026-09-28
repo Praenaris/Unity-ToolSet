@@ -1,24 +1,12 @@
 #if ENABLE_LOCALIZER
 
 
-using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-
-
 namespace DragonResonance.Localizer
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+	public enum LocalizationDataType
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
-
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+		TextAsset,
+		StreamingAsset,
 	}
 }
 

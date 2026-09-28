@@ -1,20 +1,43 @@
 #if ENABLE_SAVEDATA
 
 
+using DragonResonance.Attributes;
 using DragonResonance.Behaviours;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata", fileName = "New Savedata Settings")]
 	public class SavedataSettings : SingletonScriptableObject<SavedataSettings>
 	{
-		public bool LoadOnStart = true;
-		public bool UseCompactData = false;
-		[Min(0)] public int ThreadTimeoutMilliseconds = 0;
-		public string DefaultFilePath = "savedata.json";
-		public SFilePathOverride[] Overrides = { };
+		public bool LoadOnGameStart = true;
+		public bool SaveCompactData = false;
+
+		[Header("Versioning")]
+		public string SavedataVersionKey = "version";
+		[Min(1)] public int SavedataVersion = 1;
+
+		[Header("Slots")]
+		public bool Slotted = false;
+		[ShowIf(nameof(Slotted))] [SerializeField] [Min(1)] private int _firstSlot = 1;
+		[ShowIf(nameof(Slotted))] [SerializeField] [Min(1)] private int _maxSlots = 3;
+
+		[Header("Fallback Resource")] public SavedataResource FallbackResource = new() {
+			Root = SavedataRootPath.AppData,
+			Company = true,
+			Product = true,
+			RelativePath = "savedata.json",
+			Slotted = false,
+		};
+		public SavedataResource[] ResourceOverrides = { };
+
+
+		public int FirstSlot => _firstSlot;
+		public int MaxSlots => Slotted ? _maxSlots : -1;
+		public IEnumerable<SavedataResource> Resources => ResourceOverrides.Prepend(FallbackResource);
 	}
 }
 

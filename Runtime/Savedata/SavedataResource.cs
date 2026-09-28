@@ -1,24 +1,34 @@
-#if ENABLE_LOCALIZER
+#if ENABLE_SAVEDATA
 
 
-using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System;
 using UnityEngine;
 
 
-namespace DragonResonance.Localizer
+namespace Praenaris.Savedata
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+	[Serializable]
+	public struct SavedataResource
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
+		public SavedataRootPath Root;
+		public bool Company;
+		public bool Product;
+		public string RelativePath;
+		public bool Slotted;
+		public string[] Keys;
 
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+
+		public string GetFullPath(int slot) => FormatFullPath(slot.ToString());
+
+		internal string FormatFullPath(string slotId)
+		{
+			string rootPath = Path.Join(this.Root.Resolve(), this.Company ? Application.companyName : null, this.Product ? Application.productName : null);
+			string path = Path.Join(rootPath, ".", this.RelativePath);
+			if (this.Slotted)
+				path = Path.Join(Path.GetDirectoryName(path), $"{Path.GetFileNameWithoutExtension(path)}_{slotId}{Path.GetExtension(path)}");
+			return Path.GetFullPath(path);
+		}
 	}
 }
 

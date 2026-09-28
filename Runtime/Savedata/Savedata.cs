@@ -1,13 +1,11 @@
 #if ENABLE_SAVEDATA
 
 
-using Cysharp.Threading.Tasks;
 using DragonResonance.Extensions;
-using Praenaris;
+using DragonResonance.Logging;
+using Praenaris.Tools;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
@@ -16,15 +14,22 @@ using UnityEngine.Scripting;
 using UnityEngine;
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
 	[Preserve]
 	public partial class Savedata : ASubsystem<Savedata, SavedataSettings>
 	{
-		private static readonly Dictionary<string, JSONNode> _data = new();
-		private static readonly Dictionary<string, Action<JSONNode>> _events = new();
-		private static readonly UniTaskCompletionSource _loading = new();
-		private static readonly SemaphoreSlim _saveSemaphore = new(1, 1);
+		public const int DefaultSlot = 0;
+		public const string CurrentSlotKey = "SAVEDATA_CURRENTSLOT";
+
+		private static JSONNode[] _resourcesData = { };
+		private static JSONNode _data = default;
+		private static bool _isReady = false;
+		private static readonly SemaphoreSlim _filesSemaphore = new(1, 1);
+
+
+		public static Action<SavedataLoadState> OnLoaded = null;
+		public static Action OnSaved = null;
 
 
 		#region Events
@@ -34,120 +39,71 @@ namespace DragonResonance.Savedata
 
 			private static async Task Start()
 			{
-				if (_settings.LoadOnStart)
+				if (_settings.LoadOnGameStart)
 					await Load();
 			}
 
 		#endregion
 
 
-		#region Publics - Files
+		#region Publics - ????
 
-			public static async UniTask Load()
+			public static async Task Load() => await Load(CurrentSlot);
+			public static async Task Load(int slot)
 			{
-				Logging.Log.Info("Loading...");
-				await _starting.Task;
-
-				_data.Clear();
-				foreach (string filePath in Savedata.FilePaths) {
-					string dataFilePath = GetOptimizedPersistentDataPath(filePath);
-					if (!File.Exists(dataFilePath)) continue;
-
-					string content = await File.ReadAllTextAsync(dataFilePath, Encoding.UTF8);
-					JSONNode jsonNode = JSONNode.Parse(content);
-
-					foreach (KeyValuePair<string, JSONNode> jsonDataKeyValuePair in jsonNode)
-						Set(jsonDataKeyValuePair.Key, jsonDataKeyValuePair.Value);
-				}
-
-				_loading.TrySetResult();
-				Logging.Log.Info("Loaded!");
-			}
-
-
-			public static async UniTask Save()
-			{
-				//await _saveSemaphore.WaitAsync();
-				if (!await _saveSemaphore.WaitAsync(_settings.ThreadTimeoutMilliseconds)) return;
+				//await _starting.Task;
+				await _filesSemaphore.WaitAsync();
 				try {
-					Logging.Log.Info("Saving...");
-					await _loading.Task;
+					Log.Info($"Loading slot {slot}...");
+					SetCurrentSlot(slot);
+					_isReady = false;
 
-					HashSet<string> processedKeys = new();
-					JSONNode temporalJsonNode = null;
-					string persistentDataPath = GetOptimizedPersistentDataPath();
-					if (!Directory.CreateDirectory(persistentDataPath).Exists) return;
+					string[] filePaths = _settings.Resources.Select(resource => resource.GetFullPath(slot)).ToArray();
+					JSONNode[] resourcesData = await Task.WhenAll(filePaths.Select(LoadResource));
+					int dataVersion = CheckResourcesDataVersion(resourcesData);
+					_data = dataVersion.IsNegative() ? JSONNode.New() : MergeResourcesData(resourcesData);
 
-					// Overrides
-					foreach (SFilePathOverride savableOverride in _settings.Overrides) {
-						temporalJsonNode = JSONNode.New();
-						foreach (string key in savableOverride.Keys) {
-							if (_data.ContainsKey(key))
-								temporalJsonNode.Add(key, _data[key]);
-							processedKeys.Add(key);
-						}
-						await File.WriteAllTextAsync(
-							Path.Combine(persistentDataPath, savableOverride.FilePath),
-							temporalJsonNode.ToString(_settings.UseCompactData));
-					}
-
-					// Default
-					temporalJsonNode = JSONNode.New();
-					foreach (KeyValuePair<string, JSONNode> keyValuePair in _data.Where(dataEntryPair => !processedKeys.Contains(dataEntryPair.Key))) {
-						temporalJsonNode.Add(keyValuePair.Key, keyValuePair.Value);
-					}
-					await File.WriteAllTextAsync(
-						Path.Combine(persistentDataPath, _settings.DefaultFilePath),
-						temporalJsonNode.ToString(_settings.UseCompactData));
+					_isReady = true;
+					OnLoaded?.Invoke(EvaluateLoadState(dataVersion));
+					Log.Info($"Slot {slot} loaded!");
 				}
 				finally {
-					_saveSemaphore.Release();
+					_filesSemaphore.Release();
 				}
-
-				Logging.Log.Info("Saved!");
 			}
 
 
-			[ContextMenu(nameof(SaveReload))]
-			public static async UniTask SaveReload()
+			public static async Task Save() => await Save(CurrentSlot);
+			public static async Task Save(int slot)
 			{
-				await Save();
-				await Load();
+				//await _starting.Task;
+				await _filesSemaphore.WaitAsync();
+				try {
+					Log.Info($"Saving slot {slot}...");
+					SetCurrentSlot(slot);
+					_isReady = false;
+
+					_data[_settings.SavedataVersionKey] = _settings.SavedataVersion;	// Stamp the current savedata version
+					SavedataResource[] resources = _settings.Resources.ToArray();
+					JSONNode[] resourcesData = SplitData(_data, resources);
+					string[] filePaths = resources.Select(resource => resource.GetFullPath(slot)).ToArray();
+					await Task.WhenAll(filePaths.Select((filePath, resourceIndex) => SaveResource(filePath, resourcesData[resourceIndex])));
+
+					_isReady = true;
+					OnSaved?.Invoke();
+					Log.Info($"Slot {slot} saved!");
+				}
+				finally {
+					_filesSemaphore.Release();
+				}
 			}
 
-		#endregion
 
-
-		#region Publics - Data
-
-			public static bool Get(string key, out JSONNode json)
+			public static async Task SaveAndReload() => await SaveAndReload(CurrentSlot);
+			public static async Task SaveAndReload(int slot)
 			{
-				return _data.TryGetValue(key, out json);
-			}
-
-			public static void Set(string key, JSONNode json)
-			{
-				_data.AddOrSet(key, json);
-				Publish(key, json);
-			}
-
-		#endregion
-
-
-		#region Publics - Events
-
-			public static void Subscribe(string key, Action<JSONNode> handler)
-			{
-				if (_events.TryGetValue(key, out Action<JSONNode> current))
-					_events[key] = current + handler;
-				else
-					_events[key] = handler;
-			}
-
-			public static void Unsubscribe(string key, Action<JSONNode> handler)
-			{
-				if (_events.TryGetValue(key, out Action<JSONNode> current))
-					_events[key] = current - handler;
+				await Save(slot);
+				await Load(slot);
 			}
 
 		#endregion
@@ -155,10 +111,78 @@ namespace DragonResonance.Savedata
 
 		#region Privates
 
-			private static void Publish(string key, JSONNode eventData)
+			private static int GetCurrentSlot() => PlayerPrefs.GetInt(CurrentSlotKey, DefaultSlot);
+			private static void SetCurrentSlot(int slot) => PlayerPrefs.SetInt(CurrentSlotKey, slot);
+
+
+			private static async Task<JSONNode> LoadResource(string filePath)
 			{
-				if (_events.TryGetValue(key, out Action<JSONNode> current))
-					current?.Invoke(eventData);
+				Log.Info($"Reading {filePath} ...");
+				try {
+					string content = await Fileman.ReadFromFile(filePath);
+					if (string.IsNullOrWhiteSpace(content)) {
+						Log.Info($"No savedata found at \"{filePath}\", starting empty");
+						return JSONNode.New();
+					}
+					else {
+						JSONNode json = JSONNode.Parse(content);
+						if (json is JSONObject)
+							return json;
+
+						Log.Error($"The savedata at \"{filePath}\" is not a JSON object");
+						return null;
+					}
+				}
+				catch (Exception exception) {
+					Log.Exception(exception, $"Exception loading the savedata at \"{filePath}\"");
+					return null;
+				}
+			}
+
+			private static async Task SaveResource(string filePath, JSONNode json)
+			{
+				Log.Info($"Writing {filePath} ...");
+				try {
+					await Fileman.WriteToFile(json.ToString(_settings.SaveCompactData), filePath);
+				}
+				catch (Exception exception) {
+					Log.Exception(exception, $"Exception saving the savedata at \"{filePath}\"");
+				}
+			}
+
+
+			private static JSONNode MergeResourcesData(IEnumerable<JSONNode> resourcesData)
+			{
+				JSONNode mergedData = JSONNode.New();
+				foreach (JSONNode resourceData in resourcesData.Where(resourceData => (resourceData != null)))
+					foreach (KeyValuePair<string, JSONNode> entry in resourceData)
+						mergedData[entry.Key] = entry.Value;	// Later resources (the overrides) win over earlier ones (the fallback)
+				return mergedData;
+			}
+
+			private static JSONNode[] SplitData(JSONNode data, SavedataResource[] resources)
+			{
+				JSONNode[] resourcesData = resources.Select(_ => JSONNode.New()).ToArray();
+				foreach (KeyValuePair<string, JSONNode> entry in data) {
+					int resourceIndex = Array.FindLastIndex(resources, resource => (resource.Keys != null) && resource.Keys.Contains(entry.Key));
+					resourcesData[Math.Max(resourceIndex, 0)][entry.Key] = entry.Value;	// Unrequested keys go to the fallback, the first resource
+				}
+				return resourcesData;
+			}
+
+
+			private static int CheckResourcesDataVersion(IEnumerable<JSONNode> resourcesData)
+			{
+				foreach (JSONNode resourceData in resourcesData.Where(resourceData => (resourceData != null)))
+					if (resourceData.HasKey(_settings.SavedataVersionKey))
+						return resourceData[_settings.SavedataVersionKey].AsInt;
+				return -1;
+			}
+
+			private static SavedataLoadState EvaluateLoadState(int dataVersion)
+			{
+				if (dataVersion.IsNegative()) return SavedataLoadState.FreshNew;
+				return (dataVersion < _settings.SavedataVersion) ? SavedataLoadState.OlderVersion : SavedataLoadState.LatestVersion;
 			}
 
 		#endregion
@@ -166,14 +190,14 @@ namespace DragonResonance.Savedata
 
 		#region Properties
 
-			public static Dictionary<string, JSONNode> Data => _data;
-			public static Dictionary<string, Action<JSONNode>> Events => _events;
+			public static bool IsReady => _isReady;
+			public static int CurrentSlot => GetCurrentSlot();
 
-			public static UniTaskCompletionSource Loading => _loading;
-
-			public static IEnumerable<string> FilePaths => _settings.Overrides
-				.Select(savable => savable.FilePath)
-				.Prepend(_settings.DefaultFilePath);
+			public static JSONNode Data
+			{
+				get => _data;
+				internal set => _data = value;	// The settings editor can edit it directly
+			}
 
 		#endregion
 	}

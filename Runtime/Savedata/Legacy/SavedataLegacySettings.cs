@@ -1,24 +1,20 @@
-#if ENABLE_LOCALIZER
+#if ENABLE_SAVEDATA
 
 
 using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 
-namespace DragonResonance.Localizer
+namespace Praenaris.SavedataLegacy
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata Legacy", fileName = "New Savedata Legacy Settings")]
+	public class SavedataLegacySettings : SingletonScriptableObject<SavedataLegacySettings>
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
-
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+		public bool LoadOnStart = true;
+		public bool UseCompactData = false;
+		[Min(0)] public int ThreadTimeoutMilliseconds = 0;
+		public string DefaultFilePath = "savedata.json";
+		public SFilePathOverride[] Overrides = { };
 	}
 }
 

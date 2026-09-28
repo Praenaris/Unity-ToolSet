@@ -1,24 +1,13 @@
-#if ENABLE_LOCALIZER
+#if ENABLE_SAVEDATA
 
 
-using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-
-
-namespace DragonResonance.Localizer
+namespace Praenaris.Savedata
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+	public enum SavedataLoadState
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
-
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+		FreshNew,	// No savedata was found
+		OlderVersion,	// Savedata found, stamped with an older version
+		LatestVersion,	// Savedata found, stamped with the settings latest version
 	}
 }
 

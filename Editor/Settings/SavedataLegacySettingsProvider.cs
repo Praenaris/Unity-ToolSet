@@ -1,24 +1,50 @@
-#if ENABLE_LOCALIZER
+#if UNITY_EDITOR
 
 
-using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+using DragonResonance.Editor.Building;
+using UnityEditor;
+
+#if ENABLE_SAVEDATA
+using Praenaris.SavedataLegacy;
+#endif
 
 
-namespace DragonResonance.Localizer
+namespace DragonResonance.Editor.Settings
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+#if ENABLE_SAVEDATA
+	public class SavedataLegacySettingsProvider : AScriptableSettingsProvider<SavedataLegacySettings>
+#else
+	public class SavedataLegacySettingsProvider : AScriptableSettingsProvider
+#endif
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
+		private const string SettingsPath = "Project/Praenaris/Savedata Legacy";
+		private const string BuildDefinition = "ENABLE_SAVEDATA";
 
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+
+		#region Constructors
+
+			[SettingsProvider]
+			public static SettingsProvider Create() => new SavedataLegacySettingsProvider(SettingsPath, SettingsScope.Project);
+
+			public SavedataLegacySettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
+
+		#endregion
+
+
+		#region Inheritables
+
+			protected override void OnBeforeGUI(string searchContext)
+			{
+				#if ENABLE_SAVEDATA
+					if (!EditorGUILayout.Toggle("Enabled", true))
+						BuildDefines.SetDefinitionState(BuildDefinition, false);
+				#else
+					if (EditorGUILayout.Toggle("Enabled", false))
+						BuildDefines.SetDefinitionState(BuildDefinition, true);
+				#endif
+			}
+
+		#endregion
 	}
 }
 

@@ -1,24 +1,28 @@
 #if ENABLE_LOCALIZER
 
 
-using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
+using System;
 using UnityEngine;
 
 
 namespace DragonResonance.Localizer
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+	[Serializable]
+	public struct LocalizationDataSource
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
+		public LocalizationDataType Type;
+		[SerializeField] internal TextAsset _asset;
+		[SerializeField] internal string _path;
+		public string Url;
 
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+
+		public string Path => this.Type switch {
+		#if UNITY_EDITOR
+			LocalizationDataType.TextAsset => UnityEditor.AssetDatabase.GetAssetPath(_asset),
+		#endif
+			LocalizationDataType.StreamingAsset => System.IO.Path.Join(Application.streamingAssetsPath, _path),
+			_ => null
+		};
 	}
 }
 

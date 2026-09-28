@@ -1,41 +1,16 @@
 #if ENABLE_SAVEDATA
 
 
-using System.IO;
 using System;
-using UnityEngine;
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.SavedataLegacy
 {
-	public partial class Savedata	// Paths
+	[Serializable]
+	public struct SFilePathOverride
 	{
-		#region Publics
-
-			public static string GetOptimizedPersistentDataPath() => GetOptimizedPersistentDataPath(".");
-			public static string GetOptimizedPersistentDataPath(string path) => GetOptimizedPersistentDataPath(".", path);
-			public static string GetOptimizedPersistentDataPath(string path, string filename)
-			{
-				string optimizedPersistentDataPath = Application.persistentDataPath;
-
-				#if UNITY_STANDALONE_WIN
-					optimizedPersistentDataPath = Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-						Application.companyName, Application.productName);
-				#elif UNITY_STANDALONE_LINUX
-					optimizedPersistentDataPath = Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-						Application.companyName, Application.productName);
-				#elif UNITY_STANDALONE_OSX
-					optimizedPersistentDataPath = Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-						Application.companyName, Application.productName);
-				#endif
-
-				return Path.GetFullPath(Path.Combine(optimizedPersistentDataPath, path, filename));
-			}
-
-		#endregion
+		public string FilePath;
+		public string[] Keys;
 	}
 }
 

@@ -1,24 +1,42 @@
-#if ENABLE_LOCALIZER
+#if ENABLE_SAVEDATA
 
 
-using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System;
 using UnityEngine;
 
 
-namespace DragonResonance.Localizer
+namespace Praenaris.Savedata
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+	public static class SavedataRootPathExtensions
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
+		#region Publics
 
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+			public static string Resolve(this SavedataRootPath rootPath) => rootPath switch {
+				SavedataRootPath.AppData => GetFolderPath(Environment.SpecialFolder.ApplicationData),
+				SavedataRootPath.CommonAppData => GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+				SavedataRootPath.Desktop => GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+				SavedataRootPath.GameFolder => Path.GetDirectoryName(Application.dataPath),
+				SavedataRootPath.LocalAppData => GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+				SavedataRootPath.MyDocuments => GetFolderPath(Environment.SpecialFolder.MyDocuments),
+				SavedataRootPath.PersistentData => Application.persistentDataPath,
+				SavedataRootPath.TemporaryCache => Application.temporaryCachePath,
+				SavedataRootPath.UserProfile => GetFolderPath(Environment.SpecialFolder.UserProfile),
+				_ => Application.persistentDataPath
+			};
+
+		#endregion
+
+
+		#region Privates
+
+			private static string GetFolderPath(Environment.SpecialFolder specialFolder)
+			{
+				string folderPath = Environment.GetFolderPath(specialFolder);
+				return string.IsNullOrEmpty(folderPath) ? Application.persistentDataPath : folderPath;
+			}
+
+		#endregion
 	}
 }
 

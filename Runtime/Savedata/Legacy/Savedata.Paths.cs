@@ -1,24 +1,41 @@
-#if ENABLE_LOCALIZER
+#if ENABLE_SAVEDATA
 
 
-using DragonResonance.Behaviours;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System;
 using UnityEngine;
 
 
-namespace DragonResonance.Localizer
+namespace Praenaris.SavedataLegacy
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
-	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
+	public partial class Savedata	// Paths
 	{
-		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
-		public LocalizationDataSource[] LocalizationDataSources = { };
+		#region Publics
 
-		public SystemLanguage SystemLanguage => Application.systemLanguage;
-		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);
+			public static string GetOptimizedPersistentDataPath() => GetOptimizedPersistentDataPath(".");
+			public static string GetOptimizedPersistentDataPath(string path) => GetOptimizedPersistentDataPath(".", path);
+			public static string GetOptimizedPersistentDataPath(string path, string filename)
+			{
+				string optimizedPersistentDataPath = Application.persistentDataPath;
+
+				#if UNITY_STANDALONE_WIN
+					optimizedPersistentDataPath = Path.Combine(
+						Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+						Application.companyName, Application.productName);
+				#elif UNITY_STANDALONE_LINUX
+					optimizedPersistentDataPath = Path.Combine(
+						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+						Application.companyName, Application.productName);
+				#elif UNITY_STANDALONE_OSX
+					optimizedPersistentDataPath = Path.Combine(
+						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+						Application.companyName, Application.productName);
+				#endif
+
+				return Path.GetFullPath(Path.Combine(optimizedPersistentDataPath, path, filename));
+			}
+
+		#endregion
 	}
 }
 

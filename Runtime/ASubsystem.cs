@@ -25,6 +25,17 @@ namespace Praenaris
 			}
 
 		#endregion
+
+
+		#region Properties
+
+			public static TSettings Settings
+			{
+				get => _settings;
+				internal set => _settings = value;	// The settings editors can edit it directly
+			}
+
+		#endregion
 	}
 }
 

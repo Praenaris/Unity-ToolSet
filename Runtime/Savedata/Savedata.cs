@@ -71,6 +71,8 @@ namespace Praenaris.Savedata
 			public static async Task Save() => await Save(CurrentSlot);
 			public static async Task Save(int slot)
 			{
+				Log.Info($"slot: {slot}");
+				Log.Info($"DATA: {_data}");
 				// TODO - use GetSlotData ?
 			}
 
@@ -153,7 +155,12 @@ namespace Praenaris.Savedata
 
 			public static bool IsReady => _isReady;
 			public static int CurrentSlot => GetCurrentSlot();
-			//public static IReadOnlyList<JSONNode> ResourcesData => _resourcesData;
+
+			public static JSONNode Data
+			{
+				get => _data;
+				internal set => _data = value;	// The settings editor can edit it directly
+			}
 
 		#endregion
 	}

@@ -19,7 +19,8 @@ namespace Praenaris.Savedata
 	[Preserve]
 	public class Savedata : ASubsystem<Savedata, SavedataSettings>
 	{
-		private const string CurrentSlotKey = "SAVEDATA_CURRENTSLOT";
+		public const int DefaultSlot = 0;
+		public const string CurrentSlotKey = "SAVEDATA_CURRENTSLOT";
 
 		private static JSONNode[] _resourcesData = { };
 		private static JSONNode _data = default;
@@ -132,7 +133,7 @@ namespace Praenaris.Savedata
 
 		#region Privates
 
-			private static int GetCurrentSlot() => PlayerPrefs.GetInt(CurrentSlotKey, 0);
+			private static int GetCurrentSlot() => PlayerPrefs.GetInt(CurrentSlotKey, DefaultSlot);
 			private static void SetCurrentSlot(int slot) => PlayerPrefs.SetInt(CurrentSlotKey, slot);
 
 

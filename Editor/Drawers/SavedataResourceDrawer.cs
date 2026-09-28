@@ -38,6 +38,10 @@ namespace DragonResonance.Editor.Drawers
 				SerializedProperty slottedProperty = property.FindPropertyRelative(nameof(SavedataResource.Slotted));
 				SerializedProperty keysProperty = property.FindPropertyRelative(nameof(SavedataResource.Keys));
 
+				bool isSlottingEnabled = IsSlottingEnabled(property);
+				if (!isSlottingEnabled && slottedProperty.boolValue)
+					slottedProperty.boolValue = false;
+
 				SavedataResource resource = new() {
 					Root = (SavedataRootPath)rootProperty.intValue,
 					Company = companyProperty.boolValue,
@@ -60,7 +64,7 @@ namespace DragonResonance.Editor.Drawers
 				float secondLineY = position.y + lineHeight + EditorGUIUtility.standardVerticalSpacing;
 				float companyWidth = EditorStyles.toggle.CalcSize(CompanyLabel).x;
 				float productWidth = EditorStyles.toggle.CalcSize(ProductLabel).x;
-				float slottedWidth = EditorStyles.toggle.CalcSize(SlottedLabel).x;
+				float slottedWidth = isSlottingEnabled ? EditorStyles.toggle.CalcSize(SlottedLabel).x : 0f;
 
 				Rect pathRootRect = new(position.x, position.y, GetPathRootWidth(), lineHeight);
 				Rect companyRect = new(pathRootRect.xMax + SPACING, position.y, companyWidth, lineHeight);
@@ -78,7 +82,8 @@ namespace DragonResonance.Editor.Drawers
 					DrawToggle(companyRect, companyProperty, CompanyLabel);
 					DrawToggle(productRect, productProperty, ProductLabel);
 					EditorGUI.PropertyField(relativePathRect, relativePathProperty, GUIContent.none);
-					DrawToggle(slottedRect, slottedProperty, SlottedLabel);
+					if (isSlottingEnabled)
+						DrawToggle(slottedRect, slottedProperty, SlottedLabel);
 
 					string fullPathPreview = GetFullPathPreview(resource, out bool isValidPath);
 					EditorGUI.SelectableLabel(fullPathRect, fullPathPreview, EditorStyles.miniLabel);
@@ -117,7 +122,11 @@ namespace DragonResonance.Editor.Drawers
 		}
 
 
-		private static bool IsInsideArray(SerializedProperty property) => property.propertyPath.EndsWith("]");
+		private static bool IsInsideArray(SerializedProperty property) =>
+			property.propertyPath.EndsWith("]");
+
+		private static bool IsSlottingEnabled(SerializedProperty property) =>
+			(property.serializedObject.targetObject is not SavedataSettings settings) || settings.Slotted;	// Outside the settings asset, the toggle stays available
 
 
 		private static void DrawToggle(Rect position, SerializedProperty property, GUIContent label)

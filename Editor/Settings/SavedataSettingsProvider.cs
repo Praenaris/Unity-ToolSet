@@ -15,9 +15,9 @@ using Tabernero.SimpleJSON;
 namespace DragonResonance.Editor.Settings
 {
 #if ENABLE_SAVEDATA
-	public partial class SavedataSettingsProvider : AScriptableSettingsProvider<SavedataSettings>
+	public class SavedataSettingsProvider : AScriptableSettingsProvider<SavedataSettings>
 #else
-	public partial class SavedataSettingsProvider : AScriptableSettingsProvider
+	public class SavedataSettingsProvider : AScriptableSettingsProvider
 #endif
 	{
 		private const string SettingsPath = "Project/Praenaris/Savedata";
@@ -39,6 +39,8 @@ namespace DragonResonance.Editor.Settings
 
 		private string _dataText = string.Empty;
 		private Vector2 _dataScroll = Vector2.zero;
+		private int _selectedSlot = -1;
+		private bool _wasSlotted = false;
 
 
 		#region Constructors
@@ -71,22 +73,39 @@ namespace DragonResonance.Editor.Settings
 				EditorGUILayout.Space(SmallPadding);
 
 				#if ENABLE_SAVEDATA
+				if (this.Settings.Slotted != _wasSlotted) {	// This refreshes the data when toggled
+					SelectSlot(this.SelectedSlot);
+					_wasSlotted = this.Settings.Slotted;
+				}
+
 				EditorGUILayout.BeginHorizontal();
 				{
-					GUILayout.Button(PreviousSlotLabel, GUILayout.Width(SlotArrowWidth), GUILayout.Height(SlotRowHeight));	// TODO
-					GUILayout.Label($"Slot {Savedata.CurrentSlot}", SlotStyle, GUILayout.Height(SlotRowHeight));
-					GUILayout.Button(NextSlotLabel, GUILayout.Width(SlotArrowWidth), GUILayout.Height(SlotRowHeight));	// TODO
+					int selectedSlot = this.SelectedSlot;
+
+					EditorGUI.BeginDisabledGroup(!this.Settings.Slotted || (selectedSlot <= this.Settings.FirstSlot));
+					{
+						if (GUILayout.Button(PreviousSlotLabel, GUILayout.Width(SlotArrowWidth), GUILayout.Height(SlotRowHeight)))
+							SelectSlot(selectedSlot - 1);
+					}
+					EditorGUI.EndDisabledGroup();
+					GUILayout.Label($"Slot {selectedSlot}", SlotStyle, GUILayout.Height(SlotRowHeight));
+					EditorGUI.BeginDisabledGroup(!this.Settings.Slotted || (selectedSlot >= this.Settings.MaxSlots));
+					{
+						if (GUILayout.Button(NextSlotLabel, GUILayout.Width(SlotArrowWidth), GUILayout.Height(SlotRowHeight)))
+							SelectSlot(selectedSlot + 1);
+					}
+					EditorGUI.EndDisabledGroup();
 
 					GUILayout.FlexibleSpace();
 
 					if (GUILayout.Button(LoadLabel, GUILayout.Width(FileButtonWidth), GUILayout.Height(SlotRowHeight))) {
-						LoadData();
+						LoadData(selectedSlot);
 					}
 
 					EditorGUI.BeginDisabledGroup(!Savedata.IsReady);
 					{
 						if (GUILayout.Button(SaveLabel, GUILayout.Width(FileButtonWidth), GUILayout.Height(SlotRowHeight)))
-							SaveData();
+							SaveData(selectedSlot);
 					}
 					EditorGUI.EndDisabledGroup();
 				}
@@ -107,17 +126,25 @@ namespace DragonResonance.Editor.Settings
 		#region Privates
 
 		#if ENABLE_SAVEDATA
-			private async void LoadData()
+			private void SelectSlot(int slot)
+			{
+				_selectedSlot = slot;
+				GUIUtility.keyboardControl = 0;	// Otherwise a focused text area keeps showing its old buffer
+				_dataText = string.Empty;
+			}
+
+
+			private async void LoadData(int slot)
 			{
 				Savedata.Settings = this.Settings;
-				await Savedata.Load();
+				await Savedata.Load(slot);
 
 				GUIUtility.keyboardControl = 0;	// Otherwise a focused text area keeps showing its old buffer
 				_dataText = (Savedata.Data != null) ? Savedata.Data.ToString(false) : string.Empty;
 				Repaint();
 			}
 
-			private async void SaveData()
+			private async void SaveData(int slot)
 			{
 				JSONNode data = JSONNode.Parse(_dataText);
 				if (data is not JSONObject) {
@@ -126,7 +153,7 @@ namespace DragonResonance.Editor.Settings
 				}
 
 				Savedata.Data = data;
-				await Savedata.Save();
+				await Savedata.Save(slot);
 			}
 		#endif
 
@@ -144,6 +171,12 @@ namespace DragonResonance.Editor.Settings
 				font = EditorGUIUtility.Load("Fonts/RobotoMono/RobotoMono-Regular.ttf") as Font,
 				wordWrap = false,
 			});
+
+		#if ENABLE_SAVEDATA
+			private int SelectedSlot => this.Settings.Slotted ?
+				Mathf.Clamp((_selectedSlot < 0) ? Savedata.CurrentSlot : _selectedSlot, this.Settings.FirstSlot, this.Settings.MaxSlots) :
+				Savedata.DefaultSlot;
+		#endif
 
 		#endregion
 	}

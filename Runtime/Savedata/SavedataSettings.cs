@@ -21,8 +21,9 @@ namespace Praenaris.Savedata
 		[Min(1)] public int SavedataVersion = 1;
 
 		[Header("Slots")]
-		public bool LimitSlots = false;
-		[ShowIf(nameof(LimitSlots))] [SerializeField] [Min(1)] private int _maxSlots = 3;
+		public bool Slotted = false;
+		[ShowIf(nameof(Slotted))] [SerializeField] [Min(1)] private int _firstSlot = 1;
+		[ShowIf(nameof(Slotted))] [SerializeField] [Min(1)] private int _maxSlots = 3;
 
 		[Header("Fallback Resource")] public SavedataResource FallbackResource = new() {
 			Root = SavedataRootPath.AppData,
@@ -34,7 +35,8 @@ namespace Praenaris.Savedata
 		public SavedataResource[] ResourceOverrides = { };
 
 
-		public int MaxSlots => LimitSlots ? _maxSlots : -1;
+		public int FirstSlot => _firstSlot;
+		public int MaxSlots => Slotted ? _maxSlots : -1;
 		public IEnumerable<SavedataResource> Resources => ResourceOverrides.Prepend(FallbackResource);
 	}
 }

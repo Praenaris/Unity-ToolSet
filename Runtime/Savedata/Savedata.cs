@@ -71,9 +71,24 @@ namespace Praenaris.Savedata
 			public static async Task Save() => await Save(CurrentSlot);
 			public static async Task Save(int slot)
 			{
-				Log.Info($"slot: {slot}");
-				Log.Info($"DATA: {_data}");
-				// TODO - use GetSlotData ?
+				//await _starting.Task;
+				await _filesSemaphore.WaitAsync();
+				try {
+					Log.Info($"Saving slot {slot}...");
+					_isReady = false;
+					SetCurrentSlot(slot);
+
+					SavedataResource[] resources = _settings.Resources.ToArray();
+					JSONNode[] resourcesData = SplitData(_data, resources);
+					string[] filePaths = resources.Select(resource => resource.GetFullPath(slot)).ToArray();
+					await Task.WhenAll(filePaths.Select((filePath, resourceIndex) => SaveResource(filePath, resourcesData[resourceIndex])));
+
+					_isReady = true;
+					Log.Info($"Slot {slot} saved!");
+				}
+				finally {
+					_filesSemaphore.Release();
+				}
 			}
 
 
@@ -139,6 +154,19 @@ namespace Praenaris.Savedata
 				}
 			}
 
+
+			private static async Task SaveResource(string filePath, JSONNode json)
+			{
+				Log.Info($"Writing {filePath} ...");
+				try {
+					await Fileman.WriteToFile(json.ToString(_settings.SaveCompactData), filePath);
+				}
+				catch (Exception exception) {
+					Log.Exception(exception, $"Exception saving the savedata at \"{filePath}\"");
+				}
+			}
+
+
 			private static JSONNode MergeResourcesData(IEnumerable<JSONNode> resourcesData)
 			{
 				JSONNode mergedData = JSONNode.New();
@@ -146,6 +174,17 @@ namespace Praenaris.Savedata
 					foreach (KeyValuePair<string, JSONNode> entry in resourceData)
 						mergedData[entry.Key] = entry.Value;	// Later resources (the overrides) win over earlier ones (the fallback)
 				return mergedData;
+			}
+
+
+			private static JSONNode[] SplitData(JSONNode data, SavedataResource[] resources)
+			{
+				JSONNode[] resourcesData = resources.Select(_ => JSONNode.New()).ToArray();
+				foreach (KeyValuePair<string, JSONNode> entry in data) {
+					int resourceIndex = Array.FindLastIndex(resources, resource => (resource.Keys != null) && resource.Keys.Contains(entry.Key));
+					resourcesData[Math.Max(resourceIndex, 0)][entry.Key] = entry.Value;	// Unrequested keys go to the fallback, the first resource
+				}
+				return resourcesData;
 			}
 
 		#endregion

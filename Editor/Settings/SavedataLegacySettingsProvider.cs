@@ -1,43 +1,55 @@
-using DragonResonance.Behaviours;
-using System.Threading.Tasks;
-using System;
+#if UNITY_EDITOR
 
 
-namespace Praenaris
+using DragonResonance.Editor.Building;
+using UnityEditor;
+
+#if ENABLE_SAVEDATA
+using Praenaris.SavedataLegacy;
+#endif
+
+
+namespace DragonResonance.Editor.Settings
 {
-	public abstract class ASubsystem<TSelf, TSettings>
-		where TSelf : ASubsystem<TSelf, TSettings>
-		where TSettings : SingletonScriptableObject<TSettings>
+#if ENABLE_SAVEDATA
+	public class SavedataLegacySettingsProvider : AScriptableSettingsProvider<SavedataLegacySettings>
+#else
+	public class SavedataLegacySettingsProvider : AScriptableSettingsProvider
+#endif
 	{
-		protected static TSettings _settings = null;
-		// ReSharper disable once StaticMemberInGenericType
-		protected static readonly TaskCompletionSource<bool> _starting = new();
+		private const string SettingsPath = "Project/Praenaris/Savedata Legacy";
+		private const string BuildDefinition = "ENABLE_SAVEDATA";
 
 
-		#region Inheritables
+		#region Constructors
 
-			protected static async void Startup(Func<Task> onStarting = null, Func<Task> onStarted = null)
-			{
-				_settings = await SingletonScriptableObject<TSettings>.GetInstanceAsync();
-				if (onStarting != null) await onStarting();
-				_starting.TrySetResult(true);
-				if (onStarted != null) await onStarted();
-			}
+			[SettingsProvider]
+			public static SettingsProvider Create() => new SavedataLegacySettingsProvider(SettingsPath, SettingsScope.Project);
+
+			public SavedataLegacySettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
 
 		#endregion
 
 
-		#region Properties
+		#region Inheritables
 
-			public static TSettings Settings
+			protected override void OnBeforeGUI(string searchContext)
 			{
-				get => _settings;
-				internal set => _settings = value;	// The settings editors can edit it directly
+				#if ENABLE_SAVEDATA
+					if (!EditorGUILayout.Toggle("Enabled", true))
+						BuildDefines.SetDefinitionState(BuildDefinition, false);
+				#else
+					if (EditorGUILayout.Toggle("Enabled", false))
+						BuildDefines.SetDefinitionState(BuildDefinition, true);
+				#endif
 			}
 
 		#endregion
 	}
 }
+
+
+#endif
 
 
 /*                                                                                                                */

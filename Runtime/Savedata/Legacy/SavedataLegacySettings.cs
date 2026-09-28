@@ -1,43 +1,25 @@
+#if ENABLE_SAVEDATA
+
+
 using DragonResonance.Behaviours;
-using System.Threading.Tasks;
-using System;
+using UnityEngine;
 
 
-namespace Praenaris
+namespace Praenaris.SavedataLegacy
 {
-	public abstract class ASubsystem<TSelf, TSettings>
-		where TSelf : ASubsystem<TSelf, TSettings>
-		where TSettings : SingletonScriptableObject<TSettings>
+	[CreateAssetMenu(menuName = "Praenaris/Settings/Savedata Legacy", fileName = "New Savedata Legacy Settings")]
+	public class SavedataLegacySettings : SingletonScriptableObject<SavedataLegacySettings>
 	{
-		protected static TSettings _settings = null;
-		// ReSharper disable once StaticMemberInGenericType
-		protected static readonly TaskCompletionSource<bool> _starting = new();
-
-
-		#region Inheritables
-
-			protected static async void Startup(Func<Task> onStarting = null, Func<Task> onStarted = null)
-			{
-				_settings = await SingletonScriptableObject<TSettings>.GetInstanceAsync();
-				if (onStarting != null) await onStarting();
-				_starting.TrySetResult(true);
-				if (onStarted != null) await onStarted();
-			}
-
-		#endregion
-
-
-		#region Properties
-
-			public static TSettings Settings
-			{
-				get => _settings;
-				internal set => _settings = value;	// The settings editors can edit it directly
-			}
-
-		#endregion
+		public bool LoadOnStart = true;
+		public bool UseCompactData = false;
+		[Min(0)] public int ThreadTimeoutMilliseconds = 0;
+		public string DefaultFilePath = "savedata.json";
+		public SFilePathOverride[] Overrides = { };
 	}
 }
+
+
+#endif
 
 
 /*                                                                                                                */

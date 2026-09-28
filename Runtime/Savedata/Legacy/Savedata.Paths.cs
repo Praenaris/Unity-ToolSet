@@ -1,43 +1,46 @@
-using DragonResonance.Behaviours;
-using System.Threading.Tasks;
+#if ENABLE_SAVEDATA
+
+
+using System.IO;
 using System;
+using UnityEngine;
 
 
-namespace Praenaris
+namespace Praenaris.SavedataLegacy
 {
-	public abstract class ASubsystem<TSelf, TSettings>
-		where TSelf : ASubsystem<TSelf, TSettings>
-		where TSettings : SingletonScriptableObject<TSettings>
+	public partial class Savedata	// Paths
 	{
-		protected static TSettings _settings = null;
-		// ReSharper disable once StaticMemberInGenericType
-		protected static readonly TaskCompletionSource<bool> _starting = new();
+		#region Publics
 
-
-		#region Inheritables
-
-			protected static async void Startup(Func<Task> onStarting = null, Func<Task> onStarted = null)
+			public static string GetOptimizedPersistentDataPath() => GetOptimizedPersistentDataPath(".");
+			public static string GetOptimizedPersistentDataPath(string path) => GetOptimizedPersistentDataPath(".", path);
+			public static string GetOptimizedPersistentDataPath(string path, string filename)
 			{
-				_settings = await SingletonScriptableObject<TSettings>.GetInstanceAsync();
-				if (onStarting != null) await onStarting();
-				_starting.TrySetResult(true);
-				if (onStarted != null) await onStarted();
-			}
+				string optimizedPersistentDataPath = Application.persistentDataPath;
 
-		#endregion
+				#if UNITY_STANDALONE_WIN
+					optimizedPersistentDataPath = Path.Combine(
+						Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+						Application.companyName, Application.productName);
+				#elif UNITY_STANDALONE_LINUX
+					optimizedPersistentDataPath = Path.Combine(
+						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+						Application.companyName, Application.productName);
+				#elif UNITY_STANDALONE_OSX
+					optimizedPersistentDataPath = Path.Combine(
+						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+						Application.companyName, Application.productName);
+				#endif
 
-
-		#region Properties
-
-			public static TSettings Settings
-			{
-				get => _settings;
-				internal set => _settings = value;	// The settings editors can edit it directly
+				return Path.GetFullPath(Path.Combine(optimizedPersistentDataPath, path, filename));
 			}
 
 		#endregion
 	}
 }
+
+
+#endif
 
 
 /*                                                                                                                */

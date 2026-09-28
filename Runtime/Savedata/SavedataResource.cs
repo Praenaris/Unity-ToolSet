@@ -1,43 +1,39 @@
-using DragonResonance.Behaviours;
-using System.Threading.Tasks;
+#if ENABLE_SAVEDATA
+
+
+using System.IO;
 using System;
+using UnityEngine;
 
 
-namespace Praenaris
+namespace Praenaris.Savedata
 {
-	public abstract class ASubsystem<TSelf, TSettings>
-		where TSelf : ASubsystem<TSelf, TSettings>
-		where TSettings : SingletonScriptableObject<TSettings>
+	[Serializable]
+	public struct SavedataResource
 	{
-		protected static TSettings _settings = null;
-		// ReSharper disable once StaticMemberInGenericType
-		protected static readonly TaskCompletionSource<bool> _starting = new();
+		public SavedataRootPath Root;
+		public bool Company;
+		public bool Product;
+		public string RelativePath;
+		public bool Slotted;
+		public string[] Keys;
 
 
-		#region Inheritables
+		public string GetFullPath(int slot) => FormatFullPath(slot.ToString());
 
-			protected static async void Startup(Func<Task> onStarting = null, Func<Task> onStarted = null)
-			{
-				_settings = await SingletonScriptableObject<TSettings>.GetInstanceAsync();
-				if (onStarting != null) await onStarting();
-				_starting.TrySetResult(true);
-				if (onStarted != null) await onStarted();
-			}
-
-		#endregion
-
-
-		#region Properties
-
-			public static TSettings Settings
-			{
-				get => _settings;
-				internal set => _settings = value;	// The settings editors can edit it directly
-			}
-
-		#endregion
+		internal string FormatFullPath(string slotId)
+		{
+			string rootPath = Path.Join(this.Root.Resolve(), this.Company ? Application.companyName : null, this.Product ? Application.productName : null);
+			string path = Path.Join(rootPath, ".", this.RelativePath);
+			if (this.Slotted)
+				path = Path.Join(Path.GetDirectoryName(path), $"{Path.GetFileNameWithoutExtension(path)}_{slotId}{Path.GetExtension(path)}");
+			return Path.GetFullPath(path);
+		}
 	}
 }
+
+
+#endif
 
 
 /*                                                                                                                */

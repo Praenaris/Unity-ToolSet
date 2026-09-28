@@ -1,43 +1,20 @@
-using DragonResonance.Behaviours;
-using System.Threading.Tasks;
-using System;
+#if ENABLE_SAVEDATA
 
 
-namespace Praenaris
+using Tabernero.SimpleJSON;
+
+
+namespace Praenaris.Savedata
 {
-	public abstract class ASubsystem<TSelf, TSettings>
-		where TSelf : ASubsystem<TSelf, TSettings>
-		where TSettings : SingletonScriptableObject<TSettings>
+	public interface ISavableNode
 	{
-		protected static TSettings _settings = null;
-		// ReSharper disable once StaticMemberInGenericType
-		protected static readonly TaskCompletionSource<bool> _starting = new();
-
-
-		#region Inheritables
-
-			protected static async void Startup(Func<Task> onStarting = null, Func<Task> onStarted = null)
-			{
-				_settings = await SingletonScriptableObject<TSettings>.GetInstanceAsync();
-				if (onStarting != null) await onStarting();
-				_starting.TrySetResult(true);
-				if (onStarted != null) await onStarted();
-			}
-
-		#endregion
-
-
-		#region Properties
-
-			public static TSettings Settings
-			{
-				get => _settings;
-				internal set => _settings = value;	// The settings editors can edit it directly
-			}
-
-		#endregion
+		public JSONNode ToSavedata();
+		public void FromSavedata(JSONNode savedata);
 	}
 }
+
+
+#endif
 
 
 /*                                                                                                                */

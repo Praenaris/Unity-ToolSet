@@ -1,11 +1,19 @@
 #if ENABLE_SAVEDATA
 
 
-namespace DragonResonance.Savedata
+namespace Praenaris.Savedata
 {
-	public interface ISavableData
+	public enum SavedataRootPath
 	{
-		public string Key { get; }
+		AppData,	// %APPDATA% (AppData/Roaming) · ~/.config
+		CommonAppData,	// %PROGRAMDATA% · /usr/share
+		Desktop,	// %USERPROFILE%/Desktop · ~/Desktop
+		GameFolder,	// The folder containing the game's executable (the project root in the Editor)
+		LocalAppData,	// %LOCALAPPDATA% (AppData/Local) · ~/.local/share
+		MyDocuments,	// %USERPROFILE%/Documents · ~/Documents
+		PersistentData,	// Unity's Application.persistentDataPath
+		TemporaryCache,	// Unity's Application.temporaryCachePath
+		UserProfile,	// %USERPROFILE% · ~
 	}
 }
 

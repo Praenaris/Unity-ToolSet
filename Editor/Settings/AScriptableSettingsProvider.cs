@@ -117,6 +117,13 @@ namespace DragonResonance.Editor.Settings
 			}
 
 		#endregion
+
+
+		#region Properties
+
+			protected TSettings Settings => _settings;
+
+		#endregion
 	}
 }
 

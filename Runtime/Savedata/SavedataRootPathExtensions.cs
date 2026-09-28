@@ -1,43 +1,47 @@
-using DragonResonance.Behaviours;
-using System.Threading.Tasks;
+#if ENABLE_SAVEDATA
+
+
+using System.IO;
 using System;
+using UnityEngine;
 
 
-namespace Praenaris
+namespace Praenaris.Savedata
 {
-	public abstract class ASubsystem<TSelf, TSettings>
-		where TSelf : ASubsystem<TSelf, TSettings>
-		where TSettings : SingletonScriptableObject<TSettings>
+	public static class SavedataRootPathExtensions
 	{
-		protected static TSettings _settings = null;
-		// ReSharper disable once StaticMemberInGenericType
-		protected static readonly TaskCompletionSource<bool> _starting = new();
+		#region Publics
 
-
-		#region Inheritables
-
-			protected static async void Startup(Func<Task> onStarting = null, Func<Task> onStarted = null)
-			{
-				_settings = await SingletonScriptableObject<TSettings>.GetInstanceAsync();
-				if (onStarting != null) await onStarting();
-				_starting.TrySetResult(true);
-				if (onStarted != null) await onStarted();
-			}
+			public static string Resolve(this SavedataRootPath rootPath) => rootPath switch {
+				SavedataRootPath.AppData => GetFolderPath(Environment.SpecialFolder.ApplicationData),
+				SavedataRootPath.CommonAppData => GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+				SavedataRootPath.Desktop => GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+				SavedataRootPath.GameFolder => Path.GetDirectoryName(Application.dataPath),
+				SavedataRootPath.LocalAppData => GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+				SavedataRootPath.MyDocuments => GetFolderPath(Environment.SpecialFolder.MyDocuments),
+				SavedataRootPath.PersistentData => Application.persistentDataPath,
+				SavedataRootPath.TemporaryCache => Application.temporaryCachePath,
+				SavedataRootPath.UserProfile => GetFolderPath(Environment.SpecialFolder.UserProfile),
+				_ => Application.persistentDataPath
+			};
 
 		#endregion
 
 
-		#region Properties
+		#region Privates
 
-			public static TSettings Settings
+			private static string GetFolderPath(Environment.SpecialFolder specialFolder)
 			{
-				get => _settings;
-				internal set => _settings = value;	// The settings editors can edit it directly
+				string folderPath = Environment.GetFolderPath(specialFolder);
+				return string.IsNullOrEmpty(folderPath) ? Application.persistentDataPath : folderPath;
 			}
 
 		#endregion
 	}
 }
+
+
+#endif
 
 
 /*                                                                                                                */

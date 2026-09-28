@@ -16,6 +16,7 @@ namespace Praenaris.Savedata
 		public bool Product;
 		public string RelativePath;
 		public bool Slotted;
+		public string[] Keys;
 
 
 		public string GetFullPath(int slot) => FormatFullPath(slot.ToString());

@@ -24,6 +24,7 @@ namespace Praenaris.Savedata
 
 
 		private static JSONNode[] _resourcesData = { };
+		private static JSONNode _data = default;
 		private static bool _isReady = false;
 		private static readonly SemaphoreSlim _filesSemaphore = new(1, 1);
 
@@ -55,7 +56,8 @@ namespace Praenaris.Savedata
 					SetCurrentSlot(slot);
 
 					string[] filePaths = _settings.Resources.Select(resource => resource.GetFullPath(slot)).ToArray();
-					_resourcesData = await Task.WhenAll(filePaths.Select(LoadResource));
+					JSONNode[] resourcesData = await Task.WhenAll(filePaths.Select(LoadResource));
+					_data = MergeResourcesData(resourcesData);
 
 					_isReady = true;
 					Log.Info($"Slot {slot} loaded!");
@@ -110,26 +112,38 @@ namespace Praenaris.Savedata
 			private static int GetCurrentSlot() => PlayerPrefs.GetInt(CurrentSlotKey, 0);
 			private static void SetCurrentSlot(int slot) => PlayerPrefs.SetInt(CurrentSlotKey, slot);
 
+
 			private static async Task<JSONNode> LoadResource(string filePath)
 			{
 				Log.Info($"Reading {filePath} ...");
 				try {
-					/*string content = await Fileman.ReadFromFile(filePath);
+					string content = await Fileman.ReadFromFile(filePath);
 					if (string.IsNullOrWhiteSpace(content)) {
 						Log.Info($"No savedata found at \"{filePath}\", starting empty");
 						return JSONNode.New();
 					}
+					else {
+						JSONNode json = JSONNode.Parse(content);
+						if (json is JSONObject)
+							return json;
 
-					JSONNode json = JSONNode.Parse(content);
-					if (json is JSONObject) return json;
-
-					Log.Error($"The savedata at \"{filePath}\" is not a JSON object");*/
-					return null;
+						Log.Error($"The savedata at \"{filePath}\" is not a JSON object");
+						return null;
+					}
 				}
 				catch (Exception exception) {
 					Log.Exception(exception, $"Exception loading the savedata at \"{filePath}\"");
 					return null;
 				}
+			}
+
+			private static JSONNode MergeResourcesData(IEnumerable<JSONNode> resourcesData)
+			{
+				JSONNode mergedData = JSONNode.New();
+				foreach (JSONNode resourceData in resourcesData.Where(resourceData => (resourceData != null)))
+					foreach (KeyValuePair<string, JSONNode> entry in resourceData)
+						mergedData[entry.Key] = entry.Value;	// Later resources (the overrides) win over earlier ones (the fallback)
+				return mergedData;
 			}
 
 		#endregion
@@ -139,7 +153,7 @@ namespace Praenaris.Savedata
 
 			public static bool IsReady => _isReady;
 			public static int CurrentSlot => GetCurrentSlot();
-			public static IReadOnlyList<JSONNode> ResourcesData => _resourcesData;
+			//public static IReadOnlyList<JSONNode> ResourcesData => _resourcesData;
 
 		#endregion
 	}

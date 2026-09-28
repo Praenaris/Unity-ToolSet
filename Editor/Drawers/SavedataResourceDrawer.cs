@@ -36,6 +36,7 @@ namespace DragonResonance.Editor.Drawers
 				SerializedProperty productProperty = property.FindPropertyRelative(nameof(SavedataResource.Product));
 				SerializedProperty relativePathProperty = property.FindPropertyRelative(nameof(SavedataResource.RelativePath));
 				SerializedProperty slottedProperty = property.FindPropertyRelative(nameof(SavedataResource.Slotted));
+				SerializedProperty keysProperty = property.FindPropertyRelative(nameof(SavedataResource.Keys));
 
 				SavedataResource resource = new() {
 					Root = (SavedataRootPath)rootProperty.intValue,
@@ -48,8 +49,9 @@ namespace DragonResonance.Editor.Drawers
 				string title = GetTitle(resource);
 				GUIContent prefixLabel = string.IsNullOrEmpty(title) ? label : new GUIContent(title, label.tooltip);
 
+				bool isInsideArray = IsInsideArray(property);
 				float labelWidth = EditorGUIUtility.labelWidth;
-				if (IsArrayElement(property))
+				if (isInsideArray)
 					EditorGUIUtility.labelWidth = Mathf.Min(labelWidth, position.width * ARRAY_ELEMENT_LABEL_RATIO);
 				position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), prefixLabel);
 				EditorGUIUtility.labelWidth = labelWidth;
@@ -67,6 +69,7 @@ namespace DragonResonance.Editor.Drawers
 				Rect relativePathRect = new(productRect.xMax + SPACING, position.y, slottedRect.xMin - productRect.xMax - (SPACING * 2f), lineHeight);
 				Rect openFolderRect = new(position.xMax - OPEN_FOLDER_WIDTH, secondLineY, OPEN_FOLDER_WIDTH, lineHeight);
 				Rect fullPathRect = new(position.x, secondLineY, openFolderRect.xMin - position.x - SPACING, lineHeight);
+				Rect keysRect = new(position.x, fullPathRect.yMax + EditorGUIUtility.standardVerticalSpacing, position.width, EditorGUI.GetPropertyHeight(keysProperty, true));
 
 				int indentLevel = EditorGUI.indentLevel;
 				EditorGUI.indentLevel = 0;
@@ -85,6 +88,9 @@ namespace DragonResonance.Editor.Drawers
 							OpenContainingFolder(fullPathPreview);
 					}
 					EditorGUI.EndDisabledGroup();
+
+					if (isInsideArray)
+						EditorGUI.PropertyField(keysRect, keysProperty, true);
 				}
 				EditorGUI.indentLevel = indentLevel;
 			}
@@ -92,8 +98,26 @@ namespace DragonResonance.Editor.Drawers
 		}
 
 
-		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) =>
-			(EditorGUIUtility.singleLineHeight * 2f) + EditorGUIUtility.standardVerticalSpacing;
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+		{
+			float height = (EditorGUIUtility.singleLineHeight * 2f) + EditorGUIUtility.standardVerticalSpacing;
+			if (IsInsideArray(property))
+				height += EditorGUIUtility.standardVerticalSpacing + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(SavedataResource.Keys)), true);
+			return height;
+		}
+
+		private static float GetPathRootWidth()
+		{
+			if (_pathRootWidth >= 0f) return _pathRootWidth;
+
+			foreach (string rootName in Enum.GetNames(typeof(SavedataRootPath)))
+				_pathRootWidth = Mathf.Max(_pathRootWidth, EditorStyles.popup.CalcSize(new GUIContent(ObjectNames.NicifyVariableName(rootName))).x);
+			_pathRootWidth += PATH_ROOT_PADDING;
+			return _pathRootWidth;
+		}
+
+
+		private static bool IsInsideArray(SerializedProperty property) => property.propertyPath.EndsWith("]");
 
 
 		private static void DrawToggle(Rect position, SerializedProperty property, GUIContent label)
@@ -103,9 +127,6 @@ namespace DragonResonance.Editor.Drawers
 			if (EditorGUI.EndChangeCheck())
 				property.boolValue = value;
 		}
-
-
-		private static bool IsArrayElement(SerializedProperty property) => property.propertyPath.EndsWith("]");
 
 
 		private static string GetTitle(SavedataResource resource)
@@ -146,17 +167,6 @@ namespace DragonResonance.Editor.Drawers
 			catch (Exception exception) {
 				Log.Exception(exception, $"Unable to open the folder \"{folderPath}\"");
 			}
-		}
-
-
-		private static float GetPathRootWidth()
-		{
-			if (_pathRootWidth >= 0f) return _pathRootWidth;
-
-			foreach (string rootName in Enum.GetNames(typeof(SavedataRootPath)))
-				_pathRootWidth = Mathf.Max(_pathRootWidth, EditorStyles.popup.CalcSize(new GUIContent(ObjectNames.NicifyVariableName(rootName))).x);
-			_pathRootWidth += PATH_ROOT_PADDING;
-			return _pathRootWidth;
 		}
 	}
 }

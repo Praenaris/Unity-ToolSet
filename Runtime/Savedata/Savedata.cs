@@ -17,7 +17,7 @@ using UnityEngine;
 namespace Praenaris.Savedata
 {
 	[Preserve]
-	public class Savedata : ASubsystem<Savedata, SavedataSettings>
+	public partial class Savedata : ASubsystem<Savedata, SavedataSettings>
 	{
 		public const int DefaultSlot = 0;
 		public const string CurrentSlotKey = "SAVEDATA_CURRENTSLOT";
@@ -104,28 +104,6 @@ namespace Praenaris.Savedata
 			{
 				await Save(slot);
 				await Load(slot);
-			}
-
-		#endregion
-
-
-		#region Publics - ????
-
-			public static bool Get<T>(string key, out T data, T fallback = default)
-			{
-				data = default;
-
-				// TODO
-
-				return false;	// False if the savedata is not ready (not loaded)
-			}
-
-
-			public static bool Set<T>(string key, T data)
-			{
-				// TODO
-
-				return false;	// False if the savedata is not ready (not loaded)
 			}
 
 		#endregion

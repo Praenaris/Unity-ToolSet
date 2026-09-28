@@ -3,7 +3,6 @@
 
 using DragonResonance.Extensions;
 using DragonResonance.Logging;
-using DragonResonance.Serializables;
 using Praenaris.Tools;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,11 +21,14 @@ namespace Praenaris.Savedata
 	{
 		private const string CurrentSlotKey = "SAVEDATA_CURRENTSLOT";
 
-
 		private static JSONNode[] _resourcesData = { };
 		private static JSONNode _data = default;
 		private static bool _isReady = false;
 		private static readonly SemaphoreSlim _filesSemaphore = new(1, 1);
+
+
+		public static Action<SavedataLoadState> OnLoaded = null;
+		public static Action OnSaved = null;
 
 
 		#region Events
@@ -52,14 +54,16 @@ namespace Praenaris.Savedata
 				await _filesSemaphore.WaitAsync();
 				try {
 					Log.Info($"Loading slot {slot}...");
-					_isReady = false;
 					SetCurrentSlot(slot);
+					_isReady = false;
 
 					string[] filePaths = _settings.Resources.Select(resource => resource.GetFullPath(slot)).ToArray();
 					JSONNode[] resourcesData = await Task.WhenAll(filePaths.Select(LoadResource));
-					_data = MergeResourcesData(resourcesData);
+					int dataVersion = CheckResourcesDataVersion(resourcesData);
+					_data = dataVersion.IsNegative() ? JSONNode.New() : MergeResourcesData(resourcesData);
 
 					_isReady = true;
+					OnLoaded?.Invoke(EvaluateLoadState(dataVersion));
 					Log.Info($"Slot {slot} loaded!");
 				}
 				finally {
@@ -75,15 +79,17 @@ namespace Praenaris.Savedata
 				await _filesSemaphore.WaitAsync();
 				try {
 					Log.Info($"Saving slot {slot}...");
-					_isReady = false;
 					SetCurrentSlot(slot);
+					_isReady = false;
 
+					_data[_settings.SavedataVersionKey] = _settings.SavedataVersion;	// Stamp the current savedata version
 					SavedataResource[] resources = _settings.Resources.ToArray();
 					JSONNode[] resourcesData = SplitData(_data, resources);
 					string[] filePaths = resources.Select(resource => resource.GetFullPath(slot)).ToArray();
 					await Task.WhenAll(filePaths.Select((filePath, resourceIndex) => SaveResource(filePath, resourcesData[resourceIndex])));
 
 					_isReady = true;
+					OnSaved?.Invoke();
 					Log.Info($"Slot {slot} saved!");
 				}
 				finally {
@@ -154,7 +160,6 @@ namespace Praenaris.Savedata
 				}
 			}
 
-
 			private static async Task SaveResource(string filePath, JSONNode json)
 			{
 				Log.Info($"Writing {filePath} ...");
@@ -176,7 +181,6 @@ namespace Praenaris.Savedata
 				return mergedData;
 			}
 
-
 			private static JSONNode[] SplitData(JSONNode data, SavedataResource[] resources)
 			{
 				JSONNode[] resourcesData = resources.Select(_ => JSONNode.New()).ToArray();
@@ -185,6 +189,21 @@ namespace Praenaris.Savedata
 					resourcesData[Math.Max(resourceIndex, 0)][entry.Key] = entry.Value;	// Unrequested keys go to the fallback, the first resource
 				}
 				return resourcesData;
+			}
+
+
+			private static int CheckResourcesDataVersion(IEnumerable<JSONNode> resourcesData)
+			{
+				foreach (JSONNode resourceData in resourcesData.Where(resourceData => (resourceData != null)))
+					if (resourceData.HasKey(_settings.SavedataVersionKey))
+						return resourceData[_settings.SavedataVersionKey].AsInt;
+				return -1;
+			}
+
+			private static SavedataLoadState EvaluateLoadState(int dataVersion)
+			{
+				if (dataVersion.IsNegative()) return SavedataLoadState.FreshNew;
+				return (dataVersion < _settings.SavedataVersion) ? SavedataLoadState.OlderVersion : SavedataLoadState.LatestVersion;
 			}
 
 		#endregion

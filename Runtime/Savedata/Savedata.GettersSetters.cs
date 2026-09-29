@@ -113,25 +113,32 @@ namespace Praenaris.Savedata
 
 		#region Publics - Setters
 
+			public static bool SetBool(string key, bool value) => TrySetBool(key, value);
 			public static bool TrySetBool(string key, bool value) =>
 				TrySetNode(key, value);
 
+			public static bool SetInt(string key, int value) => TrySetInt(key, value);
 			public static bool TrySetInt(string key, int value) =>
 				TrySetNode(key, value);
 
+			public static bool SetFloat(string key, float value) => TrySetFloat(key, value);
 			public static bool TrySetFloat(string key, float value) =>
 				TrySetNode(key, value);
 
+			public static bool SetString(string key, string value) => TrySetString(key, value);
 			public static bool TrySetString(string key, string value) =>
 				TrySetNode(key, value);
 
 
+			public static bool SetSavable(string key, ISavableString value) => TrySetSavable(key, value);
 			public static bool TrySetSavable(string key, ISavableString value) =>
 				TrySetString(key, value.ToSavedata());
 
+			public static bool SetSavable(string key, ISavableNode value) => TrySetSavable(key, value);
 			public static bool TrySetSavable(string key, ISavableNode value) =>
 				TrySetNode(key, value.ToSavedata());
 
+			public static bool SetNode(string key, JSONNode value) => TrySetNode(key, value);
 			public static bool TrySetNode(string key, JSONNode value)
 			{
 				if (!_isReady) return false;

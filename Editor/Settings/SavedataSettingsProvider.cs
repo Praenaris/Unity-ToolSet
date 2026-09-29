@@ -32,6 +32,7 @@ namespace DragonResonance.Editor.Settings
 		private static readonly Color SeparatorColor = new(0.5f, 0.5f, 0.5f, 0.5f);
 		private static readonly GUIContent PreviousSlotLabel = new("◀");
 		private static readonly GUIContent NextSlotLabel = new("▶");
+		private static readonly GUIContent RefreshLabel = new("Refresh");
 		private static readonly GUIContent LoadLabel = new("Load");
 		private static readonly GUIContent SaveLabel = new("Save");
 		private static GUIStyle _slotStyle_internal = null;	// Caching only, use the property instead
@@ -98,6 +99,9 @@ namespace DragonResonance.Editor.Settings
 
 					GUILayout.FlexibleSpace();
 
+					if (GUILayout.Button(RefreshLabel, GUILayout.Width(FileButtonWidth), GUILayout.Height(SlotRowHeight)))
+						RefreshData();
+
 					if (GUILayout.Button(LoadLabel, GUILayout.Width(FileButtonWidth), GUILayout.Height(SlotRowHeight))) {
 						LoadData(selectedSlot);
 					}
@@ -138,7 +142,11 @@ namespace DragonResonance.Editor.Settings
 			{
 				Savedata.Settings = this.Settings;
 				await Savedata.Load(slot);
+				RefreshData();
+			}
 
+			private void RefreshData()
+			{
 				GUIUtility.keyboardControl = 0;	// Otherwise a focused text area keeps showing its old buffer
 				_dataText = (Savedata.Data != null) ? Savedata.Data.ToString(false) : string.Empty;
 				Repaint();

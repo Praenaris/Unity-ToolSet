@@ -1,20 +1,17 @@
 #if ENABLE_INTEGRATION
 
 
-using DragonResonance.Attributes;
 using DragonResonance.Behaviours;
+using System.Collections.Generic;
 using UnityEngine;
 
 
 namespace Praenaris.Integration
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration", fileName = "New Integration Settings")]
-	public class IntegrationSettings : SingletonScriptableObject<IntegrationSettings>
+	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration/Achievements", fileName = "New Achievements Integration Settings")]
+	public class AchievementsSettings : SingletonScriptableObject<AchievementsSettings>
 	{
-		[ReadOnly] [SerializeField] private string _integrationCheck = $"Integration package enabled and active.";
-		#if STEAMWORKS_INTEGRATION
-			[ReadOnly] [SerializeField] private string _steamworksCheck = $"Steamworks submodule working.";
-		#endif
+		public List<Achievement> Achievements = new();
 	}
 }
 

@@ -2,10 +2,13 @@
 
 
 using DragonResonance.Editor.Building;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 #if ENABLE_INTEGRATION
-using DragonResonance.Integration;
+using Praenaris.Integration;
 #endif
 
 
@@ -19,6 +22,10 @@ namespace DragonResonance.Editor.Settings
 	{
 		private const string SettingsPath = "Project/Praenaris/Integration";
 		private const string BuildDefinition = "ENABLE_INTEGRATION";
+		private const float SeparatorHeight = 1f;
+
+		private static readonly Color SeparatorColor = new(0.5f, 0.5f, 0.5f, 0.5f);
+		private static readonly SortedSet<string> _modules = new();	// Filled by each module provider when Unity creates it
 
 
 		#region Constructors
@@ -43,6 +50,27 @@ namespace DragonResonance.Editor.Settings
 						BuildDefines.SetDefinitionState(BuildDefinition, true);
 				#endif
 			}
+
+			protected override void OnAfterGUI(string searchContext)
+			{
+				#if ENABLE_INTEGRATION
+				EditorGUILayout.Space(SmallPadding);
+				EditorGUI.DrawRect(EditorGUILayout.GetControlRect(false, SeparatorHeight), SeparatorColor);
+				EditorGUILayout.Space(SmallPadding);
+
+				EditorGUILayout.LabelField("Modules", EditorStyles.boldLabel);
+				foreach (string module in _modules.Where(module => EditorGUILayout.LinkButton(module)))
+					SettingsService.OpenProjectSettings(GetModulePath(module));
+				#endif
+			}
+
+		#endregion
+
+
+		#region Publics
+
+			public static void RegisterModule(string moduleName) => _modules.Add(moduleName);
+			public static string GetModulePath(string moduleName) => $"{SettingsPath}/{moduleName}";
 
 		#endregion
 	}

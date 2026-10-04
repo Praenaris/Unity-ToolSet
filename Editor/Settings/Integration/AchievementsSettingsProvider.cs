@@ -1,20 +1,39 @@
-#if ENABLE_INTEGRATION
+#if UNITY_EDITOR && ENABLE_INTEGRATION
 
 
-using DragonResonance.Attributes;
-using DragonResonance.Behaviours;
+using Praenaris.Editor.Drawers;
+using Praenaris.Integration;
+using UnityEditor;
 using UnityEngine;
 
 
-namespace Praenaris.Integration
+namespace Praenaris.Editor.Settings
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration", fileName = "New Integration Settings")]
-	public class IntegrationSettings : SingletonScriptableObject<IntegrationSettings>
+	public class AchievementsSettingsProvider : AIntegrationModuleSettingsProvider<AchievementsSettings>
 	{
-		[ReadOnly] [SerializeField] private string _integrationCheck = $"Integration package enabled and active.";
-		#if STEAMWORKS_INTEGRATION
-			[ReadOnly] [SerializeField] private string _steamworksCheck = $"Steamworks submodule working.";
-		#endif
+		private const string ModuleName = "Achievements";
+
+
+		#region Constructors
+
+			[SettingsProvider]
+			public static SettingsProvider Create() => new AchievementsSettingsProvider();
+
+			public AchievementsSettingsProvider() : base(ModuleName) { }
+
+		#endregion
+
+
+		#region Inheritables
+
+			protected override void OnAfterGUI(string searchContext)
+			{
+				EditorGUILayout.Separator();
+				if (GUILayout.Button(AchievementsSettingsEditor.UpdateChannelsLabel))
+					AchievementsSettingsEditor.UpdateChannels(this.Settings);
+			}
+
+		#endregion
 	}
 }
 

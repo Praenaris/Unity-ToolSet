@@ -12,8 +12,11 @@ namespace Praenaris.Integration
 	public struct Achievement
 	{
 		public string Name;
-		public string Description;
-		public string SteamAchievementId;
+
+		#if STEAMWORKS_INTEGRATION
+		public string SteamworksAchievementId;
+		#endif
+
 		[SpritePreview] public Sprite Icon;
 		[ReadOnly] public string ChannelGuid;
 	}

@@ -15,7 +15,7 @@ namespace Praenaris.Editor.Drawers
 	[CustomEditor(typeof(AchievementsSettings))]
 	public class AchievementsSettingsEditor : UnityEditor.Editor
 	{
-		public const string UpdateChannelsLabel = "Update Channels";
+		public const string UpdateChannelsLabel = "Update References";
 
 
 		#region Publics
@@ -34,9 +34,9 @@ namespace Praenaris.Editor.Drawers
 			{
 				string path = AssetDatabase.GetAssetPath(settings);
 
-				Dictionary<string, AchievementChannel> existingChannels = new();
-				List<AchievementChannel> unlinkedChannels = new();
-				foreach (AchievementChannel channel in AssetDatabase.LoadAllAssetRepresentationsAtPath(path).OfType<AchievementChannel>()) {
+				Dictionary<string, AchievementReference> existingChannels = new();
+				List<AchievementReference> unlinkedChannels = new();
+				foreach (AchievementReference channel in AssetDatabase.LoadAllAssetRepresentationsAtPath(path).OfType<AchievementReference>()) {
 					string guid = channel.Data.ChannelGuid;
 					if (string.IsNullOrEmpty(guid) || !existingChannels.TryAdd(guid, channel))	// Empty or duplicated in the list
 						unlinkedChannels.Add(channel);
@@ -51,8 +51,8 @@ namespace Praenaris.Editor.Drawers
 						settings.Achievements[achievementIndex] = achievement;
 					}
 
-					if (!existingChannels.Remove(achievement.ChannelGuid, out AchievementChannel channel)) {
-						channel = ScriptableObject.CreateInstance<AchievementChannel>();
+					if (!existingChannels.Remove(achievement.ChannelGuid, out AchievementReference channel)) {
+						channel = ScriptableObject.CreateInstance<AchievementReference>();
 						AssetDatabase.AddObjectToAsset(channel, settings);
 					}
 
@@ -61,7 +61,7 @@ namespace Praenaris.Editor.Drawers
 					EditorUtility.SetDirty(channel);
 				}
 
-				foreach (AchievementChannel channel in unlinkedChannels.Concat(existingChannels.Values)) {
+				foreach (AchievementReference channel in unlinkedChannels.Concat(existingChannels.Values)) {
 					AssetDatabase.RemoveObjectFromAsset(channel);
 					UnityObject.DestroyImmediate(channel, true);
 				}

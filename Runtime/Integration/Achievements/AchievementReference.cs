@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Praenaris.Integration
 {
-	public class AchievementChannel : ScriptableObject
+	public class AchievementReference : ScriptableObject
 	{
 		[HideInInspector] public Achievement Data = default;
 
@@ -20,27 +20,21 @@ namespace Praenaris.Integration
 			[ContextMenu(nameof(Achieve))]
 			public void Achieve()
 			{
-				// TODO
-
+				#if STEAMWORKS_INTEGRATION
+					Steamworks.SteamUserStats.SetAchievement(this.Data.SteamworksAchievementId);
+					Steamworks.SteamUserStats.StoreStats();
+				#endif
 				OnAchieve?.Invoke();
 			}
 
 			[ContextMenu(nameof(Unachieve))]
 			public void Unachieve()
 			{
-				// TODO
-
+				#if STEAMWORKS_INTEGRATION
+					Steamworks.SteamUserStats.ClearAchievement(this.Data.SteamworksAchievementId);
+					Steamworks.SteamUserStats.StoreStats();
+				#endif
 				OnUnachieve?.Invoke();
-			}
-
-		#endregion
-
-
-		#region Privates
-
-			private void Test()
-			{
-				// TODO
 			}
 
 		#endregion

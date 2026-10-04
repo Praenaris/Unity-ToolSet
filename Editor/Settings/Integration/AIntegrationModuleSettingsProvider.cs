@@ -1,11 +1,12 @@
 #if UNITY_EDITOR && ENABLE_INTEGRATION
 
 
+using DragonResonance.Editor.Settings;
 using UnityEditor;
 using UnityEngine;
 
 
-namespace DragonResonance.Editor.Settings
+namespace Praenaris.Editor.Settings
 {
 	public abstract class AIntegrationModuleSettingsProvider<TSettings> : AScriptableSettingsProvider<TSettings> where TSettings : ScriptableObject
 	{

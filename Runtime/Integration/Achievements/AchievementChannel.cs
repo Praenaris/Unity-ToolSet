@@ -1,23 +1,48 @@
-#if UNITY_EDITOR && ENABLE_INTEGRATION
+#if ENABLE_INTEGRATION
 
 
-using Praenaris.Integration;
-using UnityEditor;
+using DragonResonance.Attributes;
+using UnityEngine.Events;
+using UnityEngine;
 
 
-namespace Praenaris.Editor.Settings
+namespace Praenaris.Integration
 {
-	public class AchievementsSettingsProvider : AIntegrationModuleSettingsProvider<AchievementsSettings>
+	public class AchievementChannel : ScriptableObject
 	{
-		private const string ModuleName = "Achievements";
+		[ReadOnly] public Achievement Achievement = default;
+
+		[SerializeField] private UnityEvent OnAchieve;
+		[SerializeField] private UnityEvent OnUnachieve;
 
 
-		#region Constructors
+		#region Publics
 
-			[SettingsProvider]
-			public static SettingsProvider Create() => new AchievementsSettingsProvider();
+			[ContextMenu(nameof(Achieve))]
+			public void Achieve()
+			{
+				// TODO
 
-			public AchievementsSettingsProvider() : base(ModuleName) { }
+				OnAchieve?.Invoke();
+			}
+
+			[ContextMenu(nameof(Unachieve))]
+			public void Unachieve()
+			{
+				// TODO
+
+				OnUnachieve?.Invoke();
+			}
+
+		#endregion
+
+
+		#region Privates
+
+			private void Test()
+			{
+				// TODO
+			}
 
 		#endregion
 	}

@@ -5,7 +5,7 @@ using DragonResonance.Behaviours;
 using UnityEngine;
 
 
-namespace DragonResonance.Integration
+namespace Praenaris.Integration
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration/Rich Presence", fileName = "New Rich Presence Integration Settings")]
 	public class RichPresenceSettings : SingletonScriptableObject<RichPresenceSettings>

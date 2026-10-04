@@ -2,15 +2,16 @@
 
 
 using DragonResonance.Behaviours;
+using System.Collections.Generic;
 using UnityEngine;
 
 
-namespace DragonResonance.Integration
+namespace Praenaris.Integration
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration/Achievements", fileName = "New Achievements Integration Settings")]
 	public class AchievementsSettings : SingletonScriptableObject<AchievementsSettings>
 	{
-		public string Test = string.Empty;
+		public List<Achievement> Achievements = new();
 	}
 }
 

@@ -1,25 +1,19 @@
-#if UNITY_EDITOR && ENABLE_INTEGRATION
+#if ENABLE_INTEGRATION
 
 
-using Praenaris.Integration;
-using UnityEditor;
+using DragonResonance.Attributes;
+using System;
+using UnityEngine;
 
 
-namespace Praenaris.Editor.Settings
+namespace Praenaris.Integration
 {
-	public class AchievementsSettingsProvider : AIntegrationModuleSettingsProvider<AchievementsSettings>
+	[Serializable]
+	public struct Achievement
 	{
-		private const string ModuleName = "Achievements";
-
-
-		#region Constructors
-
-			[SettingsProvider]
-			public static SettingsProvider Create() => new AchievementsSettingsProvider();
-
-			public AchievementsSettingsProvider() : base(ModuleName) { }
-
-		#endregion
+		public string NameId;
+		public string DescriptionId;
+		[SpritePreview] public Sprite Icon;
 	}
 }
 

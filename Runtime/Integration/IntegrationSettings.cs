@@ -6,7 +6,7 @@ using DragonResonance.Behaviours;
 using UnityEngine;
 
 
-namespace DragonResonance.Integration
+namespace Praenaris.Integration
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration", fileName = "New Integration Settings")]
 	public class IntegrationSettings : SingletonScriptableObject<IntegrationSettings>

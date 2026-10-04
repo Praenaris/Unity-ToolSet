@@ -8,7 +8,7 @@ using UnityEditor;
 using UnityEngine;
 
 #if ENABLE_INTEGRATION
-using DragonResonance.Integration;
+using Praenaris.Integration;
 #endif
 
 

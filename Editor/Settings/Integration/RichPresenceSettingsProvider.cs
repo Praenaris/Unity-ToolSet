@@ -1,11 +1,11 @@
 #if UNITY_EDITOR && ENABLE_INTEGRATION
 
 
-using DragonResonance.Integration;
+using Praenaris.Integration;
 using UnityEditor;
 
 
-namespace DragonResonance.Editor.Settings
+namespace Praenaris.Editor.Settings
 {
 	public class RichPresenceSettingsProvider : AIntegrationModuleSettingsProvider<RichPresenceSettings>
 	{

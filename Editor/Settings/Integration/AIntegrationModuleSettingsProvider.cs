@@ -1,20 +1,20 @@
-#if ENABLE_INTEGRATION
+#if UNITY_EDITOR && ENABLE_INTEGRATION
 
 
-using DragonResonance.Attributes;
-using DragonResonance.Behaviours;
+using UnityEditor;
 using UnityEngine;
 
 
-namespace DragonResonance.Integration
+namespace DragonResonance.Editor.Settings
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration", fileName = "New Integration Settings")]
-	public class IntegrationSettings : SingletonScriptableObject<IntegrationSettings>
+	public abstract class AIntegrationModuleSettingsProvider<TSettings> : AScriptableSettingsProvider<TSettings> where TSettings : ScriptableObject
 	{
-		[ReadOnly] [SerializeField] private string _integrationCheck = $"Integration package enabled and active.";
-		#if STEAMWORKS_INTEGRATION
-			[ReadOnly] [SerializeField] private string _steamworksCheck = $"Steamworks submodule working.";
-		#endif
+		#region Constructors
+
+			protected AIntegrationModuleSettingsProvider(string moduleName) : base(IntegrationSettingsProvider.GetModulePath(moduleName), SettingsScope.Project)
+				=> IntegrationSettingsProvider.RegisterModule(moduleName);
+
+		#endregion
 	}
 }
 

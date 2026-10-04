@@ -2,19 +2,23 @@
 
 
 using DragonResonance.Attributes;
-using DragonResonance.Behaviours;
+using System;
 using UnityEngine;
 
 
 namespace Praenaris.Integration
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Integration", fileName = "New Integration Settings")]
-	public class IntegrationSettings : SingletonScriptableObject<IntegrationSettings>
+	[Serializable]
+	public struct Achievement
 	{
-		[ReadOnly] [SerializeField] private string _integrationCheck = $"Integration package enabled and active.";
+		public string Name;
+
 		#if STEAMWORKS_INTEGRATION
-			[ReadOnly] [SerializeField] private string _steamworksCheck = $"Steamworks submodule working.";
+		public string SteamworksAchievementId;
 		#endif
+
+		[SpritePreview] public Sprite Icon;
+		[ReadOnly] public string ChannelGuid;
 	}
 }
 

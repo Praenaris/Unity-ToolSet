@@ -81,7 +81,8 @@ namespace DragonResonance.Editor.Settings
 					if (property.NextVisible(true)) {
 						do {
 							if (property.name == "m_Script") continue;
-							EditorGUILayout.PropertyField(property, true);
+							if (!OnPropertyGUI(property))
+								EditorGUILayout.PropertyField(property, true);
 						}
 						while (property.NextVisible(false));
 					}
@@ -91,6 +92,14 @@ namespace DragonResonance.Editor.Settings
 				}
 				EditorGUILayout.EndVertical();
 			}
+
+		#endregion
+
+
+		#region Inheritables
+
+			/// <returns>True if the property was drawn here, false to draw it by default</returns>
+			protected virtual bool OnPropertyGUI(SerializedProperty property) => false;
 
 		#endregion
 
@@ -122,6 +131,7 @@ namespace DragonResonance.Editor.Settings
 		#region Properties
 
 			protected TSettings Settings => _settings;
+			protected SerializedObject SerializedSettings => _serializedSettings;
 
 		#endregion
 	}

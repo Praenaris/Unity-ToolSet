@@ -1,8 +1,10 @@
 #if UNITY_EDITOR && ENABLE_INTEGRATION
 
 
+using Praenaris.Editor.Drawers;
 using Praenaris.Integration;
 using UnityEditor;
+using UnityEngine;
 
 
 namespace Praenaris.Editor.Settings
@@ -18,6 +20,18 @@ namespace Praenaris.Editor.Settings
 			public static SettingsProvider Create() => new AchievementsSettingsProvider();
 
 			public AchievementsSettingsProvider() : base(ModuleName) { }
+
+		#endregion
+
+
+		#region Inheritables
+
+			protected override void OnAfterGUI(string searchContext)
+			{
+				EditorGUILayout.Separator();
+				if (GUILayout.Button(AchievementsSettingsEditor.UpdateChannelsLabel))
+					AchievementsSettingsEditor.UpdateChannels(this.Settings);
+			}
 
 		#endregion
 	}

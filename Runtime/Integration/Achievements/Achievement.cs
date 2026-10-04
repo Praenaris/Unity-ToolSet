@@ -11,9 +11,11 @@ namespace Praenaris.Integration
 	[Serializable]
 	public struct Achievement
 	{
-		public string NameId;
-		public string DescriptionId;
+		public string Name;
+		public string Description;
+		public string SteamAchievementId;
 		[SpritePreview] public Sprite Icon;
+		[ReadOnly] public string ChannelGuid;
 	}
 }
 

@@ -1,7 +1,6 @@
 #if ENABLE_INTEGRATION
 
 
-using DragonResonance.Attributes;
 using UnityEngine.Events;
 using UnityEngine;
 
@@ -10,7 +9,7 @@ namespace Praenaris.Integration
 {
 	public class AchievementChannel : ScriptableObject
 	{
-		[ReadOnly] public Achievement Achievement = default;
+		[HideInInspector] public Achievement Data = default;
 
 		[SerializeField] private UnityEvent OnAchieve;
 		[SerializeField] private UnityEvent OnUnachieve;

@@ -17,8 +17,32 @@ namespace Praenaris.Integration
 		public string SteamworksAchievementId;
 		#endif
 
-		[SpritePreview] public Sprite Icon;
+		[SpritePreview] public Sprite AchievedIcon;
+		[SpritePreview] public Sprite UnachievedIcon;
 		[ReadOnly] public string ChannelGuid;
+
+
+		#region Publics
+
+			public void Achieve(bool applyImmediately = true)
+			{
+				#if STEAMWORKS_INTEGRATION
+					Steamworks.SteamUserStats.SetAchievement(this.SteamworksAchievementId);
+					if (applyImmediately)
+						Steamworks.SteamUserStats.StoreStats();
+				#endif
+			}
+
+			public void Unachieve(bool applyImmediately = true)
+			{
+				#if STEAMWORKS_INTEGRATION
+					Steamworks.SteamUserStats.ClearAchievement(this.SteamworksAchievementId);
+					if (applyImmediately)
+						Steamworks.SteamUserStats.StoreStats();
+				#endif
+			}
+
+		#endregion
 	}
 }
 

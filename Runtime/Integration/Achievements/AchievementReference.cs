@@ -1,7 +1,6 @@
 #if ENABLE_INTEGRATION
 
 
-using UnityEngine.Events;
 using UnityEngine;
 
 
@@ -9,33 +8,13 @@ namespace Praenaris.Integration
 {
 	public class AchievementReference : ScriptableObject
 	{
-		[HideInInspector] public Achievement Data = default;
-
-		[SerializeField] private UnityEvent OnAchieve;
-		[SerializeField] private UnityEvent OnUnachieve;
+		[HideInInspector] public Achievement Achievement = default;
 
 
 		#region Publics
 
-			[ContextMenu(nameof(Achieve))]
-			public void Achieve()
-			{
-				#if STEAMWORKS_INTEGRATION
-					Steamworks.SteamUserStats.SetAchievement(this.Data.SteamworksAchievementId);
-					Steamworks.SteamUserStats.StoreStats();
-				#endif
-				OnAchieve?.Invoke();
-			}
-
-			[ContextMenu(nameof(Unachieve))]
-			public void Unachieve()
-			{
-				#if STEAMWORKS_INTEGRATION
-					Steamworks.SteamUserStats.ClearAchievement(this.Data.SteamworksAchievementId);
-					Steamworks.SteamUserStats.StoreStats();
-				#endif
-				OnUnachieve?.Invoke();
-			}
+			[ContextMenu(nameof(Achieve))] public void Achieve() => this.Achievement.Achieve();
+			[ContextMenu(nameof(Unachieve))] public void Unachieve() => this.Achievement.Unachieve();
 
 		#endregion
 	}

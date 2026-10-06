@@ -37,7 +37,7 @@ namespace Praenaris.Editor.Drawers
 				Dictionary<string, AchievementReference> existingChannels = new();
 				List<AchievementReference> unlinkedChannels = new();
 				foreach (AchievementReference channel in AssetDatabase.LoadAllAssetRepresentationsAtPath(path).OfType<AchievementReference>()) {
-					string guid = channel.Data.ChannelGuid;
+					string guid = channel.Achievement.ChannelGuid;
 					if (string.IsNullOrEmpty(guid) || !existingChannels.TryAdd(guid, channel))	// Empty or duplicated in the list
 						unlinkedChannels.Add(channel);
 				}
@@ -57,7 +57,7 @@ namespace Praenaris.Editor.Drawers
 					}
 
 					channel.name = string.IsNullOrEmpty(achievement.Name) ? achievement.ChannelGuid : achievement.Name;
-					channel.Data = achievement;
+					channel.Achievement = achievement;
 					EditorUtility.SetDirty(channel);
 				}
 

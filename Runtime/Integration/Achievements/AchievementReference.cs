@@ -13,6 +13,8 @@ namespace Praenaris.Integration
 
 		#region Publics
 
+			public void Progress(int value) => this.Achievement.Progress(value);
+			public void Progress(float value) => this.Achievement.Progress(value);
 			[ContextMenu(nameof(Achieve))] public void Achieve() => this.Achievement.Achieve();
 			[ContextMenu(nameof(Unachieve))] public void Unachieve() => this.Achievement.Unachieve();
 

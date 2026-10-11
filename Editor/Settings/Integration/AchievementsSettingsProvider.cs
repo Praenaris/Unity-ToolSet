@@ -36,14 +36,18 @@ namespace Praenaris.Editor.Settings
 			{
 				EditorGUILayout.Separator();
 
-				EditorGUILayout.BeginHorizontal();
+				EditorGUI.BeginDisabledGroup(!Application.isPlaying);	// The platform APIs are only initialized in Play Mode
 				{
-					if (GUILayout.Button(AchieveAllLabel, GUILayout.Height(ButtonHeight)))
-						AchieveAll();
-					if (GUILayout.Button(UnachieveAllLabel, GUILayout.Height(ButtonHeight)))
-						UnachieveAll();
+					EditorGUILayout.BeginHorizontal();
+					{
+						if (GUILayout.Button(AchieveAllLabel, GUILayout.Height(ButtonHeight)))
+							AchieveAll();
+						if (GUILayout.Button(UnachieveAllLabel, GUILayout.Height(ButtonHeight)))
+							UnachieveAll();
+					}
+					EditorGUILayout.EndHorizontal();
 				}
-				EditorGUILayout.EndHorizontal();
+				EditorGUI.EndDisabledGroup();
 
 				if (GUILayout.Button(UpdateReferencesLabel, GUILayout.Height(ButtonHeight)))
 					AchievementsSettingsEditor.UpdateChannels(this.Settings);

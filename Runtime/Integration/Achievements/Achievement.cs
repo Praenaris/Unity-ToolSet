@@ -15,8 +15,12 @@ namespace Praenaris.Integration
 
 		#if STEAMWORKS_INTEGRATION
 		public string SteamworksAchievementId;
+		public string SteamworksStatId;
 		#endif
 
+		public bool IsProgressionStat;
+		public float StartingValue;
+		public float TargetValue;
 		[SpritePreview] public Sprite AchievedIcon;
 		[SpritePreview] public Sprite UnachievedIcon;
 		[ReadOnly] public string ChannelGuid;
@@ -24,9 +28,23 @@ namespace Praenaris.Integration
 
 		#region Publics
 
+			public void Progress(float value, bool applyImmediately = true)
+			{
+				#if STEAMWORKS_INTEGRATION
+					Steamworks.SteamUserStats.SetStat(this.SteamworksStatId, (int)Math.Clamp(value + 0.0001d, int.MinValue, int.MaxValue));	// Absorbs float errors before truncating
+					Steamworks.SteamUserStats.SetStat(this.SteamworksStatId, value);
+					Steamworks.SteamUserStats.ClearAchievement(this.SteamworksAchievementId);
+					if (applyImmediately)
+						Steamworks.SteamUserStats.StoreStats();
+				#endif
+			}
+
+
 			public void Achieve(bool applyImmediately = true)
 			{
 				#if STEAMWORKS_INTEGRATION
+					if (this.IsProgressionStat)
+						Progress(this.TargetValue, false);
 					Steamworks.SteamUserStats.SetAchievement(this.SteamworksAchievementId);
 					if (applyImmediately)
 						Steamworks.SteamUserStats.StoreStats();
@@ -36,10 +54,31 @@ namespace Praenaris.Integration
 			public void Unachieve(bool applyImmediately = true)
 			{
 				#if STEAMWORKS_INTEGRATION
+					if (this.IsProgressionStat)
+						Progress(this.StartingValue, false);
 					Steamworks.SteamUserStats.ClearAchievement(this.SteamworksAchievementId);
 					if (applyImmediately)
 						Steamworks.SteamUserStats.StoreStats();
 				#endif
+			}
+
+		#endregion
+
+
+		#region Properties
+
+			/// <returns>From 0 (starting value or unachieved) to 1 (target value or achieved)</returns>
+			public float NormalizedProgress
+			{
+				get {
+					#if STEAMWORKS_INTEGRATION
+						if (this.IsProgressionStat)
+							return Steamworks.SteamUserStats.GetStat(this.SteamworksAchievementId, out float value) ? Mathf.InverseLerp(this.StartingValue, this.TargetValue, value) : 0f;
+						return (Steamworks.SteamUserStats.GetAchievement(this.SteamworksAchievementId, out bool achieved) && achieved) ? 1f : 0f;
+					#else
+						return 0f;
+					#endif
+				}
 			}
 
 		#endregion

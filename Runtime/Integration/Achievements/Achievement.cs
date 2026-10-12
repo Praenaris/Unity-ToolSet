@@ -2,6 +2,7 @@
 
 
 using DragonResonance.Attributes;
+using DragonResonance.Extensions;
 using System;
 using UnityEngine;
 
@@ -28,12 +29,15 @@ namespace Praenaris.Integration
 
 		#region Publics
 
-			public void Progress(float value, bool applyImmediately = true)
+			public void Progress(float value, bool applyImmediately = true) =>
+				Progress((int)Math.Clamp(value + 0.0001d, int.MinValue, int.MaxValue), applyImmediately);
+
+			public void Progress(int value, bool applyImmediately = true)
 			{
 				#if STEAMWORKS_INTEGRATION
-					Steamworks.SteamUserStats.SetStat(this.SteamworksStatId, (int)Math.Clamp(value + 0.0001d, int.MinValue, int.MaxValue));	// Absorbs float errors before truncating
-					Steamworks.SteamUserStats.SetStat(this.SteamworksStatId, value);
-					Steamworks.SteamUserStats.ClearAchievement(this.SteamworksAchievementId);
+					int minValue = (int)Math.Min(this.StartingValue, this.TargetValue);
+					int maxValue = (int)Math.Max(this.StartingValue, this.TargetValue);
+					Steamworks.SteamUserStats.SetStat(this.SteamworksStatId, value.Clamp(minValue, maxValue));	// Steam rejects values out of the stat range
 					if (applyImmediately)
 						Steamworks.SteamUserStats.StoreStats();
 				#endif
@@ -73,12 +77,28 @@ namespace Praenaris.Integration
 				get {
 					#if STEAMWORKS_INTEGRATION
 						if (this.IsProgressionStat)
-							return Steamworks.SteamUserStats.GetStat(this.SteamworksAchievementId, out float value) ? Mathf.InverseLerp(this.StartingValue, this.TargetValue, value) : 0f;
+							return Steamworks.SteamUserStats.GetStat(this.SteamworksStatId, out float value) ? Mathf.InverseLerp(this.StartingValue, this.TargetValue, value) : 0f;
 						return (Steamworks.SteamUserStats.GetAchievement(this.SteamworksAchievementId, out bool achieved) && achieved) ? 1f : 0f;
 					#else
 						return 0f;
 					#endif
 				}
+			}
+
+			public override string ToString()
+			{
+				#if STEAMWORKS_INTEGRATION
+					string achievementState = Steamworks.SteamUserStats.GetAchievement(this.SteamworksAchievementId, out bool isAchieved) ? (isAchieved ? "ACHIEVED" : "UNACHIEVED") : "UNKNOWN";
+					string status = $"Achievement {this.Name} ({this.SteamworksAchievementId}): [{achievementState}]";
+					if (!this.IsProgressionStat) return status;
+
+					string statState = Steamworks.SteamUserStats.GetStat(this.SteamworksStatId, out int statValue)
+						? $"{statValue}/{this.TargetValue} · {Mathf.InverseLerp(this.StartingValue, this.TargetValue, statValue):P0}"
+						: "UNKNOWN";
+					return $"{status} | Stat progress ({this.SteamworksStatId}): [{statState}]";
+				#else
+					return $"Achievement {this.Name} has no integration";
+				#endif
 			}
 
 		#endregion

@@ -40,6 +40,7 @@ namespace Praenaris.Editor.Drawers
 		private static readonly GUIContent SetLabel = new("Set");
 		private static readonly GUIContent AchieveLabel = new("Achieve");
 		private static readonly GUIContent UnachieveLabel = new("Unachieve");
+		private static readonly GUIContent CheckStatusLabel = new("Check Status");
 		private static readonly Dictionary<string, float> TestValues = new();	// Testing slider values, by property path
 		private static float _fieldLabelWidth = -1f;
 		private static GUIStyle _guidStyle_internal = null;	// Caching only, use the property instead
@@ -123,6 +124,14 @@ namespace Praenaris.Editor.Drawers
 
 					// Footer
 					DrawActions(new Rect(content.x, footerY, content.width, lineHeight), property);
+
+					EditorGUI.BeginDisabledGroup(!Application.isPlaying);	// The platform APIs are only initialized in Play Mode
+					{
+						Rect checkStatusRect = new(content.x, footerY + rowStep, (2f * ACTION_WIDTH) + SPRITES_SPACING, lineHeight);	// Under both action buttons
+						if (UnityEngine.GUI.Button(checkStatusRect, CheckStatusLabel, EditorStyles.miniButton))
+							Debug.Log(((Achievement)property.boxedValue).ToString());
+					}
+					EditorGUI.EndDisabledGroup();
 				}
 				EditorGUI.indentLevel = indentLevel;
 			}
@@ -131,7 +140,7 @@ namespace Praenaris.Editor.Drawers
 
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) =>
-			(2f * VERTICAL_PADDING) + (2f * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing)) + GetBodyHeight();	// Header, body and footer
+			(2f * VERTICAL_PADDING) + (3f * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing)) + GetBodyHeight();	// Header, body and two footer rows
 
 		private static void DrawProgressSettings(Rect rect, SerializedProperty property)
 		{
@@ -201,8 +210,11 @@ namespace Praenaris.Editor.Drawers
 
 				EditorGUI.BeginDisabledGroup(!isPlaying);
 				{
-					if (UnityEngine.GUI.Button(setRect, SetLabel, EditorStyles.miniButton))
-						((Achievement)property.boxedValue).Progress(TestValues[key]);
+					if (UnityEngine.GUI.Button(setRect, SetLabel, EditorStyles.miniButton)) {
+						Achievement achievement = (Achievement)property.boxedValue;
+						achievement.Unachieve(false);	// Testing only, relocks it so the stat can go down and unlock again
+						achievement.Progress(TestValues[key]);
+					}
 				}
 				EditorGUI.EndDisabledGroup();
 			}

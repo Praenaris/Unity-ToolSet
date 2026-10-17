@@ -1,4 +1,4 @@
-#if STEAMWORKS_INTEGRATION
+#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 
 
 // The SteamManager is designed to work with Steamworks.NET

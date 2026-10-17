@@ -25,7 +25,7 @@ namespace Praenaris.Editor.Drawers
 		private const string MISSING_GUID_TEXT = "No GUID yet, update the references to assign one";
 
 		private static readonly (string AchievementName, string StatName, GUIContent Label)[] StoreIdFields = {	// Add any new store ID fields here
-			#if STEAMWORKS_INTEGRATION
+			#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 			(nameof(Achievement.SteamworksAchievementId), nameof(Achievement.SteamworksStatId), new GUIContent("Steamworks")),
 			#endif
 		};

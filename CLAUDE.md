@@ -14,7 +14,7 @@ Dependencies (`package.json`): DevKit, `dev.tabernero.simplejson` (namespace `Ta
 
 There is **one asmdef**, `Praenaris.ToolSet.asmdef` (`rootNamespace: Praenaris`, `autoReferenced`), at the repo root. There is **no Editor asmdef**: everything under `Editor/` compiles into the same runtime assembly, so **every Editor file is wrapped whole in `#if UNITY_EDITOR` … `#endif`** (before the usings, after the namespace). New editor code must do the same, or player builds break.
 
-`versionDefines` in the asmdef turn installed packages into defines: `SIMPLEJSON`, `UNITASK`, and `STEAMWORKS_INTEGRATION` (only when `com.rlabrecque.steamworks.net` is installed). Steamworks calls are always behind `#if STEAMWORKS_INTEGRATION`, and the code must compile without it.
+`versionDefines` in the asmdef turn installed packages into defines: `SIMPLEJSON`, `UNITASK`, and `STEAMWORKS_INTEGRATION` (only when `com.rlabrecque.steamworks.net` is installed). Steamworks calls are always behind `#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)`, and the code must compile without it.
 
 ```
 Runtime/

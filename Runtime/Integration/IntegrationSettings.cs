@@ -12,7 +12,7 @@ namespace Praenaris.Integration
 	public class IntegrationSettings : SingletonScriptableObject<IntegrationSettings>
 	{
 		[ReadOnly] [SerializeField] private string _integrationCheck = $"Integration package enabled and active.";
-		#if STEAMWORKS_INTEGRATION
+		#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 			[ReadOnly] [SerializeField] private string _steamworksCheck = $"Steamworks submodule working.";
 		#endif
 	}

@@ -1,48 +1,20 @@
-#if UNITY_EDITOR
+#if ENABLE_SITUATIONS
 
 
-using DragonResonance.Editor.Building;
-using UnityEditor;
-
-#if ENABLE_UNIBUILD
-using Praenaris.Unibuild;
-#endif
+using Praenaris;
+using UnityEngine.Scripting;
+using UnityEngine;
 
 
-namespace DragonResonance.Editor.Settings
+namespace Praenaris.Situations
 {
-#if ENABLE_UNIBUILD
-	public class UnibuildSettingsProvider : AScriptableSettingsProvider<UnibuildSettings>
-#else
-	public class UnibuildSettingsProvider : AScriptableSettingsProvider
-#endif
+	[Preserve]
+	public class Situations : ASubsystem<Situations, SituationsSettings>
 	{
-		private const string SettingsPath = "Project/Praenaris/Unibuild";
-		private const string BuildDefinition = "ENABLE_UNIBUILD";
+		#region Events
 
-
-		#region Constructors
-
-			[SettingsProvider]
-			public static SettingsProvider Create() => new UnibuildSettingsProvider(SettingsPath, SettingsScope.Project);
-
-			public UnibuildSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
-
-		#endregion
-
-
-		#region Inheritables
-
-			protected override void OnBeforeGUI(string searchContext)
-			{
-				#if ENABLE_UNIBUILD
-					if (!EditorGUILayout.Toggle("Enabled", true))
-						BuildDefines.SetDefinitionState(BuildDefinition, false);
-				#else
-					if (EditorGUILayout.Toggle("Enabled", false))
-						BuildDefines.SetDefinitionState(BuildDefinition, true);
-				#endif
-			}
+			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+			private static void Initialize() => Startup();
 
 		#endregion
 	}

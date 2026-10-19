@@ -1,15 +1,34 @@
-#if ENABLE_SITUATIONMANAGER
+#if UNITY_EDITOR
 
 
-using DragonResonance.Behaviours;
-using UnityEngine;
+using UnityEditor;
 
 
-namespace Praenaris.SituationManager
+namespace DragonResonance.Editor.Building
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/SituationManager", fileName = "New SituationManager Settings")]
-	public class SituationManagerSettings : SingletonScriptableObject<SituationManagerSettings>
+	[InitializeOnLoad]
+	public static class UnibuilderSystemToggler
 	{
+		private const string SUBSYSTEM_DEFINE = "_ENABLE_UNIBUILDER";
+
+
+		#region Constructors
+
+			static UnibuilderSystemToggler() => BuildDefines.SetDefinition(SUBSYSTEM_DEFINE, false);
+
+		#endregion
+
+
+		#region Publics
+
+			#if ENABLE_UNIBUILDER
+				[MenuItem("Subsystems/Unibuilder [ON]/Disable Unibuilder")]
+			#else
+				[MenuItem("Subsystems/Unibuilder [OFF]/Enable Unibuilder")]
+			#endif
+			public static void SwitchSubsystem() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
+
+		#endregion
 	}
 }
 

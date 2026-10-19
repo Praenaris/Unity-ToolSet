@@ -1,34 +1,15 @@
-#if UNITY_EDITOR
+#if ENABLE_UNIBUILDER
 
 
-using UnityEditor;
+using DragonResonance.Behaviours;
+using UnityEngine;
 
 
-namespace DragonResonance.Editor.Building
+namespace Praenaris.Unibuilder
 {
-	[InitializeOnLoad]
-	public static class UnibuildSystemToggler
+	[CreateAssetMenu(menuName = "Praenaris/Settings/Unibuilder", fileName = "New Unibuilder Settings")]
+	public class UnibuilderSettings : SingletonScriptableObject<UnibuilderSettings>
 	{
-		private const string SUBSYSTEM_DEFINE = "_ENABLE_UNIBUILD";
-
-
-		#region Constructors
-
-			static UnibuildSystemToggler() => BuildDefines.SetDefinition(SUBSYSTEM_DEFINE, false);
-
-		#endregion
-
-
-		#region Publics
-
-			#if ENABLE_UNIBUILD
-				[MenuItem("Subsystems/Unibuild [ON]/Disable Unibuild")]
-			#else
-				[MenuItem("Subsystems/Unibuild [OFF]/Enable Unibuild")]
-			#endif
-			public static void SwitchSubsystem() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
-
-		#endregion
 	}
 }
 

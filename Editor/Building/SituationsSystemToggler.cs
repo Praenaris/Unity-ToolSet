@@ -1,20 +1,32 @@
-#if ENABLE_SITUATIONMANAGER
+#if UNITY_EDITOR
 
 
-using Praenaris;
-using UnityEngine.Scripting;
-using UnityEngine;
+using UnityEditor;
 
 
-namespace Praenaris.SituationManager
+namespace DragonResonance.Editor.Building
 {
-	[Preserve]
-	public class SituationManager : ASubsystem<SituationManager, SituationManagerSettings>
+	[InitializeOnLoad]
+	public static class SituationsSystemToggler
 	{
-		#region Events
+		private const string SUBSYSTEM_DEFINE = "_ENABLE_SITUATIONS";
 
-			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-			private static void Initialize() => Startup();
+
+		#region Constructors
+
+			static SituationsSystemToggler() => BuildDefines.SetDefinition(SUBSYSTEM_DEFINE, false);
+
+		#endregion
+
+
+		#region Publics
+
+			#if ENABLE_SITUATIONS
+				[MenuItem("Subsystems/Situations [ON]/Disable Situations")]
+			#else
+				[MenuItem("Subsystems/Situations [OFF]/Enable Situations")]
+			#endif
+			public static void SwitchSubsystem() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
 
 		#endregion
 	}

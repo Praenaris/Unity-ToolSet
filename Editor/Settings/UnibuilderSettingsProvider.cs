@@ -4,29 +4,29 @@
 using DragonResonance.Editor.Building;
 using UnityEditor;
 
-#if ENABLE_SITUATIONMANAGER
-using Praenaris.SituationManager;
+#if ENABLE_UNIBUILDER
+using Praenaris.Unibuilder;
 #endif
 
 
 namespace DragonResonance.Editor.Settings
 {
-#if ENABLE_SITUATIONMANAGER
-	public class SituationManagerSettingsProvider : AScriptableSettingsProvider<SituationManagerSettings>
+#if ENABLE_UNIBUILDER
+	public class UnibuilderSettingsProvider : AScriptableSettingsProvider<UnibuilderSettings>
 #else
-	public class SituationManagerSettingsProvider : AScriptableSettingsProvider
+	public class UnibuilderSettingsProvider : AScriptableSettingsProvider
 #endif
 	{
-		private const string SettingsPath = "Project/Praenaris/SituationManager";
-		private const string BuildDefinition = "ENABLE_SITUATIONMANAGER";
+		private const string SettingsPath = "Project/Praenaris/Unibuilder";
+		private const string BuildDefinition = "ENABLE_UNIBUILDER";
 
 
 		#region Constructors
 
 			[SettingsProvider]
-			public static SettingsProvider Create() => new SituationManagerSettingsProvider(SettingsPath, SettingsScope.Project);
+			public static SettingsProvider Create() => new UnibuilderSettingsProvider(SettingsPath, SettingsScope.Project);
 
-			public SituationManagerSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
+			public UnibuilderSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
 
 		#endregion
 
@@ -35,7 +35,7 @@ namespace DragonResonance.Editor.Settings
 
 			protected override void OnBeforeGUI(string searchContext)
 			{
-				#if ENABLE_SITUATIONMANAGER
+				#if ENABLE_UNIBUILDER
 					if (!EditorGUILayout.Toggle("Enabled", true))
 						BuildDefines.SetDefinitionState(BuildDefinition, false);
 				#else

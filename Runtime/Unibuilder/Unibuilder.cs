@@ -1,4 +1,4 @@
-#if ENABLE_UNIBUILD
+#if ENABLE_UNIBUILDER
 
 
 using Praenaris;
@@ -6,10 +6,10 @@ using UnityEngine.Scripting;
 using UnityEngine;
 
 
-namespace Praenaris.Unibuild
+namespace Praenaris.Unibuilder
 {
 	[Preserve]
-	public class Unibuild : ASubsystem<Unibuild, UnibuildSettings>
+	public class Unibuilder : ASubsystem<Unibuilder, UnibuilderSettings>
 	{
 		#region Events
 

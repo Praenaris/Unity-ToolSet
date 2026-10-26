@@ -18,7 +18,8 @@ namespace Praenaris.Editor.Drawers
 		private const float COLUMN_SPACING = 8f;
 		private const float ICON_SIZE = 60f;
 		private const float TOGGLE_WIDTH = 16f;
-		private const float ACTION_WIDTH = ICON_SIZE;	// Each button right under its icon
+		private const float CHECK_STATUS_WIDTH = (2f * ICON_SIZE) + SPRITES_SPACING;
+		private const float TESTING_ROW_HEIGHT = 24f;	// Slightly taller than a line, they are the important controls
 		private const float VALUE_WIDTH = 48f;
 		private const float SET_WIDTH = 40f;
 		private const int FIXED_ROWS = 2;	// Name and progress rows, the store IDs come after them
@@ -33,7 +34,6 @@ namespace Praenaris.Editor.Drawers
 		private static readonly GUIContent AchievementIdLabel = new("Ach. ID");
 		private static readonly GUIContent StatIdLabel = new("Stat. ID");
 		private static readonly GUIContent ProgressLabel = new("Progress");
-		private static readonly GUIContent ProgressiveToggleLabel = new(string.Empty);
 		private static readonly GUIContent StartingLabel = new("From");
 		private static readonly GUIContent TargetLabel = new("To");
 		private static readonly GUIContent TestLabel = new("Test");
@@ -41,205 +41,248 @@ namespace Praenaris.Editor.Drawers
 		private static readonly GUIContent AchieveLabel = new("Achieve");
 		private static readonly GUIContent UnachieveLabel = new("Unachieve");
 		private static readonly GUIContent CheckStatusLabel = new("Check Status");
+		private static readonly Color AchieveColor = new(0.6f, 0.85f, 1f);
+		private static readonly Color UnachieveColor = new(1f, 0.65f, 0.65f);
+		private static readonly Color TestingColor = new(1.6f, 1.6f, 1.6f);	// The slider, Set and Check Status, above 1 brightens them towards white
 		private static readonly Dictionary<string, float> TestValues = new();	// Testing slider values, by property path
-		private static float _fieldLabelWidth = -1f;
+		private static float _fieldLabelWidth_internal = -1f;	// Caching only, use the property instead
 		private static GUIStyle _guidStyle_internal = null;	// Caching only, use the property instead
+		private static GUIStyle _testingButtonStyle_internal = null;	// Caching only, use the property instead
 
 
-		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-		{
-			EditorGUI.BeginProperty(position, label, property);
+		#region Publics
+
+			public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 			{
-				SerializedProperty nameProperty = property.FindPropertyRelative(nameof(Achievement.Name));
-				SerializedProperty achievedIconProperty = property.FindPropertyRelative(nameof(Achievement.AchievedIcon));
-				SerializedProperty unachievedIconProperty = property.FindPropertyRelative(nameof(Achievement.UnachievedIcon));
-				SerializedProperty guidProperty = property.FindPropertyRelative(nameof(Achievement.ChannelGuid));
-
-				string title = nameProperty.stringValue;
-				string guid = guidProperty.stringValue;
-
-				position = EditorGUI.IndentedRect(position);
-				Rect content = new(position.x + HORIZONTAL_PADDING, position.y + VERTICAL_PADDING, position.width - (2f * HORIZONTAL_PADDING), position.height - (2f * VERTICAL_PADDING));
-				float lineHeight = EditorGUIUtility.singleLineHeight;
-				float rowStep = lineHeight + EditorGUIUtility.standardVerticalSpacing;
-				float bodyHeight = GetBodyHeight();
-				float bodyY = content.y + rowStep;
-				float footerY = bodyY + bodyHeight + EditorGUIUtility.standardVerticalSpacing;
-
-				Rect titleRect = new(content.x, content.y, content.width * 0.6f, lineHeight);
-				Rect guidRect = new(titleRect.xMax + SPRITES_SPACING, content.y, content.xMax - titleRect.xMax - SPRITES_SPACING, lineHeight);
-
-				Rect achievedIconRect = new(content.x, bodyY, ICON_SIZE, ICON_SIZE);
-				Rect unachievedIconRect = new(achievedIconRect.xMax + SPRITES_SPACING, bodyY, ICON_SIZE, ICON_SIZE);
-
-				float fieldLabelWidth = GetFieldLabelWidth();
-				float labelsX = unachievedIconRect.xMax + COLUMN_SPACING;
-				float valuesX = labelsX + fieldLabelWidth + SPRITES_SPACING;
-				float valuesWidth = content.xMax - valuesX;
-
-				int indentLevel = EditorGUI.indentLevel;
-				EditorGUI.indentLevel = 0;
+				EditorGUI.BeginProperty(position, label, property);
 				{
-					UnityEngine.GUI.Box(position, GUIContent.none, EditorStyles.helpBox);
+					position = EditorGUI.IndentedRect(position);
+					Rect content = new(position.x + HORIZONTAL_PADDING, position.y + VERTICAL_PADDING, position.width - (2f * HORIZONTAL_PADDING), position.height - (2f * VERTICAL_PADDING));
+					float lineHeight = EditorGUIUtility.singleLineHeight;
+					float rowStep = lineHeight + EditorGUIUtility.standardVerticalSpacing;
+					float bodyY = content.y + rowStep;
+					float footerY = bodyY + GetBodyHeight() + EditorGUIUtility.standardVerticalSpacing;
 
-					// Header
-					EditorGUI.LabelField(titleRect, string.IsNullOrEmpty(title) ? label.text : title, EditorStyles.boldLabel);
-					EditorGUI.SelectableLabel(guidRect, string.IsNullOrEmpty(guid) ? MISSING_GUID_TEXT : guid, GuidStyle);
-
-					// Icons
-					EditorGUI.ObjectField(achievedIconRect, achievedIconProperty, typeof(Sprite), GUIContent.none);
-					EditorGUI.ObjectField(unachievedIconRect, unachievedIconProperty, typeof(Sprite), GUIContent.none);
-
-					// Name row
-					EditorGUI.LabelField(new Rect(labelsX, bodyY, fieldLabelWidth, lineHeight), NameLabel, EditorStyles.miniLabel);
-					EditorGUI.PropertyField(new Rect(valuesX, bodyY, valuesWidth, lineHeight), nameProperty, GUIContent.none);
-
-					// Progress row
-					float progressY = bodyY + rowStep;
-					EditorGUI.LabelField(new Rect(labelsX, progressY, fieldLabelWidth, lineHeight), ProgressLabel, EditorStyles.miniLabel);
-					DrawProgressSettings(new Rect(valuesX, progressY, valuesWidth, lineHeight), property);
-
-					// Store IDs rows, achievement and stat
+					// Left column, the icons, and right column, the fields and testing controls
+					Rect achievedIconRect = new(content.x, bodyY, ICON_SIZE, ICON_SIZE);
+					Rect unachievedIconRect = new(achievedIconRect.xMax + SPRITES_SPACING, bodyY, ICON_SIZE, ICON_SIZE);
+					float labelsX = unachievedIconRect.xMax + COLUMN_SPACING;
+					float valuesX = labelsX + FieldLabelWidth + SPRITES_SPACING;
+					float valuesWidth = content.xMax - valuesX;
 					bool isProgressionStat = property.FindPropertyRelative(nameof(Achievement.IsProgressionStat)).boolValue;
-					float achievementIdLabelWidth = EditorStyles.miniLabel.CalcSize(AchievementIdLabel).x;
-					float statIdLabelWidth = EditorStyles.miniLabel.CalcSize(StatIdLabel).x;
-					float idWidth = (valuesWidth - achievementIdLabelWidth - statIdLabelWidth - COLUMN_SPACING - (2f * SPRITES_SPACING)) * 0.5f;
-					for (int fieldIndex = 0; fieldIndex < StoreIdFields.Length; fieldIndex++) {
-						float rowY = bodyY + ((FIXED_ROWS + fieldIndex) * rowStep);
-						Rect achievementIdLabelRect = new(valuesX, rowY, achievementIdLabelWidth, lineHeight);
-						Rect achievementIdRect = new(achievementIdLabelRect.xMax + SPRITES_SPACING, rowY, idWidth, lineHeight);
-						Rect statIdLabelRect = new(achievementIdRect.xMax + COLUMN_SPACING, rowY, statIdLabelWidth, lineHeight);
-						Rect statIdRect = new(statIdLabelRect.xMax + SPRITES_SPACING, rowY, content.xMax - statIdLabelRect.xMax - SPRITES_SPACING, lineHeight);
 
-						EditorGUI.LabelField(new Rect(labelsX, rowY, fieldLabelWidth, lineHeight), StoreIdFields[fieldIndex].Label, EditorStyles.miniLabel);
-						EditorGUI.LabelField(achievementIdLabelRect, AchievementIdLabel, EditorStyles.miniLabel);
-						EditorGUI.PropertyField(achievementIdRect, property.FindPropertyRelative(StoreIdFields[fieldIndex].AchievementName), GUIContent.none);
-						EditorGUI.BeginDisabledGroup(!isProgressionStat);
-						{
-							EditorGUI.LabelField(statIdLabelRect, StatIdLabel, EditorStyles.miniLabel);
-							EditorGUI.PropertyField(statIdRect, property.FindPropertyRelative(StoreIdFields[fieldIndex].StatName), GUIContent.none);
-						}
-						EditorGUI.EndDisabledGroup();
-					}
-
-					// Footer
-					DrawActions(new Rect(content.x, footerY, content.width, lineHeight), property);
-
-					EditorGUI.BeginDisabledGroup(!Application.isPlaying);	// The platform APIs are only initialized in Play Mode
+					int indentLevel = EditorGUI.indentLevel;
+					EditorGUI.indentLevel = 0;
 					{
-						Rect checkStatusRect = new(content.x, footerY + rowStep, (2f * ACTION_WIDTH) + SPRITES_SPACING, lineHeight);	// Under both action buttons
-						if (UnityEngine.GUI.Button(checkStatusRect, CheckStatusLabel, EditorStyles.miniButton))
-							Debug.Log(((Achievement)property.boxedValue).ToString());
+						UnityEngine.GUI.Box(position, GUIContent.none, EditorStyles.helpBox);
+						DrawHeader(new Rect(content.x, content.y, content.width, lineHeight), property, label);
+						EditorGUI.ObjectField(achievedIconRect, property.FindPropertyRelative(nameof(Achievement.AchievedIcon)), typeof(Sprite), GUIContent.none);
+						EditorGUI.ObjectField(unachievedIconRect, property.FindPropertyRelative(nameof(Achievement.UnachievedIcon)), typeof(Sprite), GUIContent.none);
+
+						DrawFieldLabel(labelsX, bodyY, NameLabel);
+						EditorGUI.PropertyField(new Rect(valuesX, bodyY, valuesWidth, lineHeight), property.FindPropertyRelative(nameof(Achievement.Name)), GUIContent.none);
+
+						DrawFieldLabel(labelsX, bodyY + rowStep, ProgressLabel);
+						DrawProgressSettings(new Rect(valuesX, bodyY + rowStep, valuesWidth, lineHeight), property, isProgressionStat);
+
+						for (int fieldIndex = 0; fieldIndex < StoreIdFields.Length; fieldIndex++) {
+							float rowY = bodyY + ((FIXED_ROWS + fieldIndex) * rowStep);
+							DrawFieldLabel(labelsX, rowY, StoreIdFields[fieldIndex].Label);
+							DrawStoreIds(new Rect(valuesX, rowY, valuesWidth, lineHeight), property, StoreIdFields[fieldIndex], isProgressionStat);
+						}
+
+						float testingWidth = content.xMax - labelsX;
+						DrawProgressTesting(new Rect(labelsX, footerY, testingWidth, TESTING_ROW_HEIGHT), property, isProgressionStat);
+						DrawActions(new Rect(labelsX, footerY + TESTING_ROW_HEIGHT + EditorGUIUtility.standardVerticalSpacing, testingWidth, TESTING_ROW_HEIGHT), property);
 					}
-					EditorGUI.EndDisabledGroup();
+					EditorGUI.indentLevel = indentLevel;
 				}
-				EditorGUI.indentLevel = indentLevel;
+				EditorGUI.EndProperty();
 			}
-			EditorGUI.EndProperty();
-		}
+
+			public override float GetPropertyHeight(SerializedProperty property, GUIContent label) =>	// Header, body and the two testing rows
+				(2f * VERTICAL_PADDING) + EditorGUIUtility.singleLineHeight + GetBodyHeight() + (2f * TESTING_ROW_HEIGHT) + (3f * EditorGUIUtility.standardVerticalSpacing);
+
+		#endregion
 
 
-		public override float GetPropertyHeight(SerializedProperty property, GUIContent label) =>
-			(2f * VERTICAL_PADDING) + (3f * (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing)) + GetBodyHeight();	// Header, body and two footer rows
+		#region Privates - Fields
 
-		private static void DrawProgressSettings(Rect rect, SerializedProperty property)
-		{
-			SerializedProperty isProgressionStatProperty = property.FindPropertyRelative(nameof(Achievement.IsProgressionStat));
-			SerializedProperty startingValueProperty = property.FindPropertyRelative(nameof(Achievement.StartingValue));
-			SerializedProperty targetValueProperty = property.FindPropertyRelative(nameof(Achievement.TargetValue));
-
-			float startingLabelWidth = EditorStyles.miniLabel.CalcSize(StartingLabel).x;
-			float targetLabelWidth = EditorStyles.miniLabel.CalcSize(TargetLabel).x;
-			float valueWidth = (rect.width - TOGGLE_WIDTH - startingLabelWidth - targetLabelWidth - COLUMN_SPACING - (4f * SPRITES_SPACING)) * 0.5f;
-
-			Rect toggleRect = new(rect.x, rect.y, TOGGLE_WIDTH, rect.height);
-			Rect startingLabelRect = new(toggleRect.xMax + SPRITES_SPACING, rect.y, startingLabelWidth, rect.height);
-			Rect startingValueRect = new(startingLabelRect.xMax + SPRITES_SPACING, rect.y, valueWidth, rect.height);
-			Rect targetLabelRect = new(startingValueRect.xMax + COLUMN_SPACING, rect.y, targetLabelWidth, rect.height);
-			Rect targetValueRect = new(targetLabelRect.xMax + SPRITES_SPACING, rect.y, rect.xMax - targetLabelRect.xMax - SPRITES_SPACING, rect.height);
-
-			EditorGUI.PropertyField(toggleRect, isProgressionStatProperty, ProgressiveToggleLabel);
-
-			EditorGUI.BeginDisabledGroup(!isProgressionStatProperty.boolValue);
+			private static void DrawHeader(Rect rect, SerializedProperty property, GUIContent label)
 			{
-				EditorGUI.LabelField(startingLabelRect, StartingLabel, EditorStyles.miniLabel);
-				EditorGUI.PropertyField(startingValueRect, startingValueProperty, GUIContent.none);
-				EditorGUI.LabelField(targetLabelRect, TargetLabel, EditorStyles.miniLabel);
-				EditorGUI.PropertyField(targetValueRect, targetValueProperty, GUIContent.none);
+				string title = property.FindPropertyRelative(nameof(Achievement.Name)).stringValue;
+				string guid = property.FindPropertyRelative(nameof(Achievement.ChannelGuid)).stringValue;
+				Rect titleRect = new(rect.x, rect.y, rect.width * 0.6f, rect.height);
+				Rect guidRect = new(titleRect.xMax + SPRITES_SPACING, rect.y, rect.xMax - titleRect.xMax - SPRITES_SPACING, rect.height);
+
+				EditorGUI.LabelField(titleRect, string.IsNullOrEmpty(title) ? label.text : title, EditorStyles.boldLabel);
+				EditorGUI.SelectableLabel(guidRect, string.IsNullOrEmpty(guid) ? MISSING_GUID_TEXT : guid, GuidStyle);
 			}
-			EditorGUI.EndDisabledGroup();
-		}
 
-		private static void DrawActions(Rect rect, SerializedProperty property)
-		{
-			SerializedProperty isProgressionStatProperty = property.FindPropertyRelative(nameof(Achievement.IsProgressionStat));
-			SerializedProperty startingValueProperty = property.FindPropertyRelative(nameof(Achievement.StartingValue));
-			SerializedProperty targetValueProperty = property.FindPropertyRelative(nameof(Achievement.TargetValue));
+			private static void DrawFieldLabel(float x, float y, GUIContent label) =>
+				EditorGUI.LabelField(new Rect(x, y, FieldLabelWidth, EditorGUIUtility.singleLineHeight), label, EditorStyles.miniLabel);
 
-			Rect achieveRect = new(rect.x, rect.y, ACTION_WIDTH, rect.height);
-			Rect unachieveRect = new(achieveRect.xMax + SPRITES_SPACING, rect.y, ACTION_WIDTH, rect.height);
-			Rect testLabelRect = new(unachieveRect.xMax + (2f * COLUMN_SPACING), rect.y, EditorStyles.miniLabel.CalcSize(TestLabel).x, rect.height);
-			Rect setRect = new(rect.xMax - SET_WIDTH, rect.y, SET_WIDTH, rect.height);
-			Rect testValueRect = new(setRect.x - SPRITES_SPACING - VALUE_WIDTH, rect.y, VALUE_WIDTH, rect.height);
-			Rect sliderRect = new(testLabelRect.xMax + SPRITES_SPACING, rect.y, testValueRect.x - testLabelRect.xMax - COLUMN_SPACING, rect.height);
-
-			bool isPlaying = Application.isPlaying;	// The platform APIs are only initialized in Play Mode
-
-			EditorGUI.BeginDisabledGroup(!isPlaying);
+			private static void DrawProgressSettings(Rect rect, SerializedProperty property, bool isProgressionStat)
 			{
-				if (UnityEngine.GUI.Button(achieveRect, AchieveLabel, EditorStyles.miniButtonLeft))
-					((Achievement)property.boxedValue).Achieve();
-				if (UnityEngine.GUI.Button(unachieveRect, UnachieveLabel, EditorStyles.miniButtonRight))
-					((Achievement)property.boxedValue).Unachieve();
-			}
-			EditorGUI.EndDisabledGroup();
+				float startingLabelWidth = EditorStyles.miniLabel.CalcSize(StartingLabel).x;
+				float targetLabelWidth = EditorStyles.miniLabel.CalcSize(TargetLabel).x;
+				float valueWidth = (rect.width - TOGGLE_WIDTH - startingLabelWidth - targetLabelWidth - COLUMN_SPACING - (4f * SPRITES_SPACING)) * 0.5f;
 
-			EditorGUI.BeginDisabledGroup(!isProgressionStatProperty.boolValue);
-			{
-				float startingValue = startingValueProperty.floatValue;
-				float targetValue = targetValueProperty.floatValue;
-				float minValue = Mathf.Min(startingValue, targetValue);
-				float maxValue = Mathf.Max(startingValue, targetValue);
+				Rect toggleRect = new(rect.x, rect.y, TOGGLE_WIDTH, rect.height);
+				Rect startingLabelRect = new(toggleRect.xMax + SPRITES_SPACING, rect.y, startingLabelWidth, rect.height);
+				Rect startingValueRect = new(startingLabelRect.xMax + SPRITES_SPACING, rect.y, valueWidth, rect.height);
+				Rect targetLabelRect = new(startingValueRect.xMax + COLUMN_SPACING, rect.y, targetLabelWidth, rect.height);
+				Rect targetValueRect = new(targetLabelRect.xMax + SPRITES_SPACING, rect.y, rect.xMax - targetLabelRect.xMax - SPRITES_SPACING, rect.height);
 
-				string key = property.propertyPath;
-				float testValue = TestValues.TryGetValue(key, out float storedValue) ? Mathf.Clamp(storedValue, minValue, maxValue) : startingValue;	// Defaults at the starting value
+				EditorGUI.PropertyField(toggleRect, property.FindPropertyRelative(nameof(Achievement.IsProgressionStat)), GUIContent.none);
 
-				EditorGUI.LabelField(testLabelRect, TestLabel, EditorStyles.miniLabel);
-				testValue = UnityEngine.GUI.HorizontalSlider(sliderRect, testValue, minValue, maxValue);	// Bar only, EditorGUI.Slider hides it when narrow
-				TestValues[key] = Mathf.Clamp(EditorGUI.FloatField(testValueRect, testValue), minValue, maxValue);
-
-				EditorGUI.BeginDisabledGroup(!isPlaying);
+				EditorGUI.BeginDisabledGroup(!isProgressionStat);
 				{
-					if (UnityEngine.GUI.Button(setRect, SetLabel, EditorStyles.miniButton)) {
-						Achievement achievement = (Achievement)property.boxedValue;
-						achievement.Unachieve(false);	// Testing only, relocks it so the stat can go down and unlock again
-						achievement.Progress(TestValues[key]);
-					}
+					EditorGUI.LabelField(startingLabelRect, StartingLabel, EditorStyles.miniLabel);
+					EditorGUI.PropertyField(startingValueRect, property.FindPropertyRelative(nameof(Achievement.StartingValue)), GUIContent.none);
+					EditorGUI.LabelField(targetLabelRect, TargetLabel, EditorStyles.miniLabel);
+					EditorGUI.PropertyField(targetValueRect, property.FindPropertyRelative(nameof(Achievement.TargetValue)), GUIContent.none);
 				}
 				EditorGUI.EndDisabledGroup();
 			}
-			EditorGUI.EndDisabledGroup();
-		}
 
-		private static float GetBodyHeight() => Mathf.Max(GetRowsHeight(FIXED_ROWS + StoreIdFields.Length), ICON_SIZE);
+			private static void DrawStoreIds(Rect rect, SerializedProperty property, (string AchievementName, string StatName, GUIContent Label) storeIdField, bool isProgressionStat)
+			{
+				float achievementIdLabelWidth = EditorStyles.miniLabel.CalcSize(AchievementIdLabel).x;
+				float statIdLabelWidth = EditorStyles.miniLabel.CalcSize(StatIdLabel).x;
+				float idWidth = (rect.width - achievementIdLabelWidth - statIdLabelWidth - COLUMN_SPACING - (2f * SPRITES_SPACING)) * 0.5f;
 
-		private static float GetRowsHeight(int rows) =>
-			(rows * EditorGUIUtility.singleLineHeight) + ((rows - 1) * EditorGUIUtility.standardVerticalSpacing);
+				Rect achievementIdLabelRect = new(rect.x, rect.y, achievementIdLabelWidth, rect.height);
+				Rect achievementIdRect = new(achievementIdLabelRect.xMax + SPRITES_SPACING, rect.y, idWidth, rect.height);
+				Rect statIdLabelRect = new(achievementIdRect.xMax + COLUMN_SPACING, rect.y, statIdLabelWidth, rect.height);
+				Rect statIdRect = new(statIdLabelRect.xMax + SPRITES_SPACING, rect.y, rect.xMax - statIdLabelRect.xMax - SPRITES_SPACING, rect.height);
 
-		private static float GetFieldLabelWidth()
-		{
-			if (_fieldLabelWidth >= 0f) return _fieldLabelWidth;
+				EditorGUI.LabelField(achievementIdLabelRect, AchievementIdLabel, EditorStyles.miniLabel);
+				EditorGUI.PropertyField(achievementIdRect, property.FindPropertyRelative(storeIdField.AchievementName), GUIContent.none);
 
-			_fieldLabelWidth = Mathf.Max(EditorStyles.miniLabel.CalcSize(NameLabel).x, EditorStyles.miniLabel.CalcSize(ProgressLabel).x);
-			foreach ((string _, string _, GUIContent fieldLabel) in StoreIdFields)
-				_fieldLabelWidth = Mathf.Max(_fieldLabelWidth, EditorStyles.miniLabel.CalcSize(fieldLabel).x);
-			return _fieldLabelWidth;
-		}
+				EditorGUI.BeginDisabledGroup(!isProgressionStat);
+				{
+					EditorGUI.LabelField(statIdLabelRect, StatIdLabel, EditorStyles.miniLabel);
+					EditorGUI.PropertyField(statIdRect, property.FindPropertyRelative(storeIdField.StatName), GUIContent.none);
+				}
+				EditorGUI.EndDisabledGroup();
+			}
+
+		#endregion
 
 
-		private static GUIStyle GuidStyle => (_guidStyle_internal ??= new GUIStyle(EditorStyles.miniLabel) {
-			alignment = TextAnchor.MiddleRight,
-		});
+		#region Privates - Testing
+
+			private static void DrawProgressTesting(Rect rect, SerializedProperty property, bool isProgressionStat)
+			{
+				float lineHeight = EditorGUIUtility.singleLineHeight;
+				float lineY = rect.y + ((rect.height - lineHeight) * 0.5f);	// The single-line controls, centered in the taller row
+				Rect checkStatusRect = new(rect.xMax - CHECK_STATUS_WIDTH, rect.y, CHECK_STATUS_WIDTH, rect.height);
+				Rect setRect = new(checkStatusRect.x - COLUMN_SPACING - SET_WIDTH, rect.y, SET_WIDTH, rect.height);
+				Rect testValueRect = new(setRect.x - SPRITES_SPACING - VALUE_WIDTH, lineY, VALUE_WIDTH, lineHeight);
+				Rect testLabelRect = new(rect.x, lineY, EditorStyles.miniLabel.CalcSize(TestLabel).x, lineHeight);
+				Rect sliderRect = new(testLabelRect.xMax + SPRITES_SPACING, lineY, testValueRect.x - testLabelRect.xMax - COLUMN_SPACING, lineHeight);
+
+				float startingValue = property.FindPropertyRelative(nameof(Achievement.StartingValue)).floatValue;
+				float targetValue = property.FindPropertyRelative(nameof(Achievement.TargetValue)).floatValue;
+				float minValue = Mathf.Min(startingValue, targetValue);
+				float maxValue = Mathf.Max(startingValue, targetValue);
+				string key = property.propertyPath;
+				float testValue = TestValues.TryGetValue(key, out float storedValue) ? Mathf.Clamp(storedValue, minValue, maxValue) : startingValue;	// Defaults at the starting value
+				bool isPlaying = Application.isPlaying;	// The platform APIs are only initialized in Play Mode
+
+				EditorGUI.BeginDisabledGroup(!isProgressionStat);
+				{
+					EditorGUI.LabelField(testLabelRect, TestLabel, EditorStyles.miniLabel);
+					Color backgroundColor = UnityEngine.GUI.backgroundColor;
+					UnityEngine.GUI.backgroundColor = TestingColor;
+					testValue = UnityEngine.GUI.HorizontalSlider(sliderRect, testValue, minValue, maxValue);	// Bar only, EditorGUI.Slider hides it when narrow
+					UnityEngine.GUI.backgroundColor = backgroundColor;
+					TestValues[key] = testValue = Mathf.Clamp(EditorGUI.FloatField(testValueRect, testValue), minValue, maxValue);
+				}
+				EditorGUI.EndDisabledGroup();
+
+				EditorGUI.BeginDisabledGroup(!isProgressionStat || !isPlaying);
+				{
+					if (DrawTintedButton(setRect, SetLabel, TestingColor)) {
+						Achievement achievement = GetAchievement(property);
+						achievement.Unachieve(false);	// Testing only, relocks it so the stat can go down and unlock again
+						achievement.Progress(testValue);
+					}
+				}
+				EditorGUI.EndDisabledGroup();
+
+				EditorGUI.BeginDisabledGroup(!isPlaying);
+				{
+					if (DrawTintedButton(checkStatusRect, CheckStatusLabel, TestingColor))
+						Debug.Log(GetAchievement(property).ToString());
+				}
+				EditorGUI.EndDisabledGroup();
+			}
+
+			private static void DrawActions(Rect rect, SerializedProperty property)
+			{
+				float buttonWidth = (rect.width - SPRITES_SPACING) * 0.5f;	// Both share the whole row
+				Rect achieveRect = new(rect.x, rect.y, buttonWidth, rect.height);
+				Rect unachieveRect = new(achieveRect.xMax + SPRITES_SPACING, rect.y, buttonWidth, rect.height);
+
+				EditorGUI.BeginDisabledGroup(!Application.isPlaying);	// The platform APIs are only initialized in Play Mode
+				{
+					if (DrawTintedButton(achieveRect, AchieveLabel, AchieveColor))
+						GetAchievement(property).Achieve();
+					if (DrawTintedButton(unachieveRect, UnachieveLabel, UnachieveColor))
+						GetAchievement(property).Unachieve();
+				}
+				EditorGUI.EndDisabledGroup();
+			}
+
+			private static bool DrawTintedButton(Rect rect, GUIContent label, Color color)
+			{
+				Color backgroundColor = UnityEngine.GUI.backgroundColor;
+				UnityEngine.GUI.backgroundColor = color;
+				bool clicked = UnityEngine.GUI.Button(rect, label, TestingButtonStyle);
+				UnityEngine.GUI.backgroundColor = backgroundColor;
+				return clicked;
+			}
+
+		#endregion
+
+
+		#region Privates - Layout
+
+			private static Achievement GetAchievement(SerializedProperty property) => (Achievement)property.boxedValue;
+
+			private static float GetBodyHeight() => Mathf.Max(GetRowsHeight(FIXED_ROWS + StoreIdFields.Length), ICON_SIZE);
+
+			private static float GetRowsHeight(int rows) =>
+				(rows * EditorGUIUtility.singleLineHeight) + ((rows - 1) * EditorGUIUtility.standardVerticalSpacing);
+
+		#endregion
+
+
+		#region Properties
+
+			private static float FieldLabelWidth
+			{
+				get {
+					if (_fieldLabelWidth_internal >= 0f) return _fieldLabelWidth_internal;
+
+					_fieldLabelWidth_internal = Mathf.Max(EditorStyles.miniLabel.CalcSize(NameLabel).x, EditorStyles.miniLabel.CalcSize(ProgressLabel).x);
+					foreach ((string _, string _, GUIContent fieldLabel) in StoreIdFields)
+						_fieldLabelWidth_internal = Mathf.Max(_fieldLabelWidth_internal, EditorStyles.miniLabel.CalcSize(fieldLabel).x);
+					return _fieldLabelWidth_internal;
+				}
+			}
+
+			private static GUIStyle GuidStyle => (_guidStyle_internal ??= new GUIStyle(EditorStyles.miniLabel) {
+				alignment = TextAnchor.MiddleRight,
+			});
+
+			private static GUIStyle TestingButtonStyle => (_testingButtonStyle_internal ??= new GUIStyle(EditorStyles.miniButton) {
+				fixedHeight = 0f,	// The mini button has a fixed height, it would ignore the taller testing rows
+			});
+
+		#endregion
 	}
 }
 

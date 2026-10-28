@@ -6,7 +6,8 @@
         "Praenaris.DevKit",
         "Tabernero.SimpleJSON",
         "UniTask",
-        "UniTask.Linq"
+        "UniTask.Linq",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

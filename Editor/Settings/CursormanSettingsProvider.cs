@@ -5,7 +5,7 @@ using DragonResonance.Editor.Building;
 using UnityEditor;
 
 #if ENABLE_CURSORMAN
-using DragonResonance.Cursorman;
+using Praenaris.Cursorman;
 #endif
 
 

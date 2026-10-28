@@ -2,14 +2,29 @@
 
 
 using DragonResonance.Behaviours;
+using System.Collections.Generic;
 using UnityEngine;
 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
-namespace DragonResonance.Cursorman
+
+namespace Praenaris.Cursorman
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Cursorman", fileName = "New Cursorman Settings")]
 	public class CursormanSettings : SingletonScriptableObject<CursormanSettings>
 	{
+		public CursorMode CursorMode = CursorMode.Auto;
+		[Tooltip("Preset applied on startup and when resetting, none uses the system cursor")]
+		[Cursor] public string DefaultCursor = string.Empty;
+		#if ENABLE_INPUT_SYSTEM
+		[Tooltip("Pointer position or delta action, it shows the cursor again when it moves while auto-hidden")]
+		public InputActionReference PointerInput = null;
+		#endif
+
+		[Header("Presets")]
+		public List<CursorPreset> Presets = new();
 	}
 }
 

@@ -5,7 +5,7 @@ using DragonResonance.Editor.Building;
 using UnityEditor;
 
 #if ENABLE_SITUATIONMANAGER
-using DragonResonance.SituationManager;
+using Praenaris.SituationManager;
 #endif
 
 

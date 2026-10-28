@@ -5,7 +5,7 @@ using DragonResonance.Editor.Building;
 using UnityEditor;
 
 #if ENABLE_UNIBUILD
-using DragonResonance.Unibuild;
+using Praenaris.Unibuild;
 #endif
 
 

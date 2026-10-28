@@ -6,7 +6,7 @@ using UnityEngine.Scripting;
 using UnityEngine;
 
 
-namespace DragonResonance.Unibuild
+namespace Praenaris.Unibuild
 {
 	[Preserve]
 	public class Unibuild : ASubsystem<Unibuild, UnibuildSettings>

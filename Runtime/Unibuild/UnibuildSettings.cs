@@ -5,7 +5,7 @@ using DragonResonance.Behaviours;
 using UnityEngine;
 
 
-namespace DragonResonance.Unibuild
+namespace Praenaris.Unibuild
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Unibuild", fileName = "New Unibuild Settings")]
 	public class UnibuildSettings : SingletonScriptableObject<UnibuildSettings>

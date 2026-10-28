@@ -6,7 +6,7 @@ using UnityEngine.Scripting;
 using UnityEngine;
 
 
-namespace DragonResonance.SituationManager
+namespace Praenaris.SituationManager
 {
 	[Preserve]
 	public class SituationManager : ASubsystem<SituationManager, SituationManagerSettings>

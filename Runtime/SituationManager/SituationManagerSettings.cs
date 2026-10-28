@@ -5,7 +5,7 @@ using DragonResonance.Behaviours;
 using UnityEngine;
 
 
-namespace DragonResonance.SituationManager
+namespace Praenaris.SituationManager
 {
 	[CreateAssetMenu(menuName = "Praenaris/Settings/SituationManager", fileName = "New SituationManager Settings")]
 	public class SituationManagerSettings : SingletonScriptableObject<SituationManagerSettings>

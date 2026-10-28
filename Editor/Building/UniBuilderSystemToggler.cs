@@ -1,48 +1,32 @@
 #if UNITY_EDITOR
 
 
-using DragonResonance.Editor.Building;
 using UnityEditor;
 
-#if ENABLE_UNIBUILDER
-using Praenaris.Unibuilder;
-#endif
 
-
-namespace DragonResonance.Editor.Settings
+namespace DragonResonance.Editor.Building
 {
-#if ENABLE_UNIBUILDER
-	public class UnibuilderSettingsProvider : AScriptableSettingsProvider<UnibuilderSettings>
-#else
-	public class UnibuilderSettingsProvider : AScriptableSettingsProvider
-#endif
+	[InitializeOnLoad]
+	public static class UniBuilderSystemToggler
 	{
-		private const string SettingsPath = "Project/Praenaris/Unibuilder";
-		private const string BuildDefinition = "ENABLE_UNIBUILDER";
+		private const string SUBSYSTEM_DEFINE = "_ENABLE_UNIBUILDER";
 
 
 		#region Constructors
 
-			[SettingsProvider]
-			public static SettingsProvider Create() => new UnibuilderSettingsProvider(SettingsPath, SettingsScope.Project);
-
-			public UnibuilderSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
+			static UniBuilderSystemToggler() => BuildDefines.SetDefinition(SUBSYSTEM_DEFINE, false);
 
 		#endregion
 
 
-		#region Inheritables
+		#region Publics
 
-			protected override void OnBeforeGUI(string searchContext)
-			{
-				#if ENABLE_UNIBUILDER
-					if (!EditorGUILayout.Toggle("Enabled", true))
-						BuildDefines.SetDefinitionState(BuildDefinition, false);
-				#else
-					if (EditorGUILayout.Toggle("Enabled", false))
-						BuildDefines.SetDefinitionState(BuildDefinition, true);
-				#endif
-			}
+			#if ENABLE_UNIBUILDER
+				[MenuItem("Subsystems/UniBuilder [ON]/Disable UniBuilder")]
+			#else
+				[MenuItem("Subsystems/UniBuilder [OFF]/Enable UniBuilder")]
+			#endif
+			public static void SwitchSubsystem() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
 
 		#endregion
 	}

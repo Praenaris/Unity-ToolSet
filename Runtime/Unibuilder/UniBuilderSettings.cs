@@ -5,10 +5,10 @@ using DragonResonance.Behaviours;
 using UnityEngine;
 
 
-namespace Praenaris.Unibuilder
+namespace Praenaris.UniBuilder
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Unibuilder", fileName = "New Unibuilder Settings")]
-	public class UnibuilderSettings : SingletonScriptableObject<UnibuilderSettings>
+	[CreateAssetMenu(menuName = "Praenaris/Settings/UniBuilder", fileName = "New UniBuilder Settings")]
+	public class UniBuilderSettings : SingletonScriptableObject<UniBuilderSettings>
 	{
 	}
 }

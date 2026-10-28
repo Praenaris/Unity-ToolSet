@@ -6,10 +6,10 @@ using UnityEngine.Scripting;
 using UnityEngine;
 
 
-namespace Praenaris.Unibuilder
+namespace Praenaris.UniBuilder
 {
 	[Preserve]
-	public class Unibuilder : ASubsystem<Unibuilder, UnibuilderSettings>
+	public class UniBuilder : ASubsystem<UniBuilder, UniBuilderSettings>
 	{
 		#region Events
 

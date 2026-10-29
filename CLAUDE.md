@@ -19,11 +19,14 @@ There is **one asmdef**, `Praenaris.ToolSet.asmdef` (`rootNamespace: Praenaris`,
 ```
 Runtime/
 ├── ASubsystem.cs          base of the static subsystems
+├── Cursorman/             cursor subsystem (scaffold)
 ├── Fileman/               async local file read/write + UnityWebRequest fetch (Praenaris.Tools)
 ├── Savedata/              JSON savedata in slots and resources (+ Legacy/)
+├── Situations/            situations subsystem (scaffold)
 ├── Localizer/             string tables from local resources / streaming assets / online sheets
 ├── Prefabricator/         spawns prefabs from settings on game start
 ├── Sounder/               pooled AudioSource player (+ Animator/ state hooks)
+├── UniBuilder/            build tool subsystem (in development)
 └── Integration/           platform façade: Achievements, RichPresence, Steamworks/SteamManager
 Editor/
 ├── Building/              Subsystems/ menu togglers (one per subsystem) + Steamworks disabler
@@ -35,7 +38,7 @@ Resources/[SteamManager].prefab
 
 ## Subsystem defines
 
-Every subsystem is compiled out unless its define is on: `ENABLE_SAVEDATA`, `ENABLE_LOCALIZER`, `ENABLE_PREFABRICATOR`, `ENABLE_SOUNDER`, `ENABLE_INTEGRATION`. **Each file of a subsystem is wrapped whole in its define.**
+Every subsystem is compiled out unless its define is on: `ENABLE_SAVEDATA`, `ENABLE_LOCALIZER`, `ENABLE_PREFABRICATOR`, `ENABLE_SOUNDER`, `ENABLE_INTEGRATION`, `ENABLE_CURSORMAN`, `ENABLE_SITUATIONS`, `ENABLE_UNIBUILDER`. **Each file of a subsystem is wrapped whole in its define.**
 
 - The togglers in `Editor/Building/*SystemToggler.cs` are `[InitializeOnLoad]`: their static constructor registers the define in its *off* form (`_ENABLE_X`, leading underscore = off) through DevKit's `BuildDefines.SetDefinition` if the project has neither form yet, and their `Subsystems/<Name> [ON|OFF]` menu item flips it. A new subsystem gets its own toggler copied from these.
 - `DisableSteamworksToggler` flips `DISABLESTEAMWORKS` (Steamworks.NET's own switch) from the `Integration/Steamworks` menu.
@@ -62,6 +65,10 @@ Every subsystem is compiled out unless its define is on: `ENABLE_SAVEDATA`, `ENA
 **Sounder** (`DragonResonance.Sounder`): `Sounder.Play` / `PlayAndAwait` / `PlayAndGet` take an `SAudioSourceConfig` (an `AudioResource` + mixer group) and use a pooled `AudioSource` from `SounderPool`, a DevKit `PersistentSingletonPossumBehaviour` that releases sources when they finish; `AnimatorStateSounderPlayer` plays configs from Animator states. Sounder predates `ASubsystem` and still has its own UniTask startup.
 
 **Localizer** (`DragonResonance.Localizer`, partial `Localizer` + `.Local` + `.Online`): loads string tables into a DevKit `HeaderedSheet<string>` (languages as columns, keys as rows) from `LocalizerSettings` sources; online sources are fetched first only in the Editor and development builds. `Localize(template)` replaces `{Key}`, joining `Key:1`, `Key:2`… lines for composite keys; the language is the first of system language + `LanguageFallbacks` present in the sheet; `OnLanguageChange` fires on `ChangeLanguage`.
+
+**Cursorman** (`Praenaris.Cursorman`), **Situations** (`Praenaris.Situations`): scaffolds only so far: an empty `ASubsystem` (`Startup()` at `AfterAssembliesLoaded`), an empty settings asset, its settings page and toggler. Grow them following the pattern above.
+
+**UniBuilder** (`Praenaris.UniBuilder`, `Runtime/UniBuilder/`; always capitalized **UniBuilder**, never `Unibuilder`): a larger tool under active development, starting from the same scaffold (`UniBuilder` subsystem, `UniBuilderSettings`, `Project/Praenaris/UniBuilder` page, `Subsystems/UniBuilder` toggler). Keep this entry updated as its design settles.
 
 **Integration** (`Praenaris.Integration`): `IntegrationSettings`, plus modules with their own settings and pages. **Achievements**: `AchievementsSettings.Achievements` is a list of `Achievement` structs (name, Steam achievement/stat IDs, optional progression stat range, icons); the custom editor (`Editor/Drawers/AchievementsSettingsEditor.cs`) keeps one `AchievementReference` sub-asset per entry inside the settings asset, matched by the `[ReadOnly] ChannelGuid` it generates, so game objects can reference a single achievement and call `Progress` / `Achieve` / `Unachieve`. Steam rejects stat values outside the stat's range, hence the clamping in `Achievement.Progress`. **RichPresence**: settings page only so far. `Integration/Steamworks/SteamManager.cs` is the community Steamworks.NET `SteamManager` (global namespace, its own style; leave it as is), spawned from `Resources/[SteamManager].prefab`.
 

@@ -3,6 +3,7 @@
 
 using DragonResonance.Editor.Building;
 using UnityEditor;
+using UnityEngine;
 
 #if ENABLE_UNIBUILDER
 using Praenaris.UniBuilder;
@@ -19,6 +20,18 @@ namespace DragonResonance.Editor.Settings
 	{
 		private const string SettingsPath = "Project/Praenaris/UniBuilder";
 		private const string BuildDefinition = "ENABLE_UNIBUILDER";
+		private const int SectionTitleFontSize = 20;
+
+		private static readonly Color StandaloneTint = new(0.95f, 0.95f, 0.95f, 0.2f);
+		private static readonly Color SteamTint = new(0.4f, 0.753f, 0.957f, 0.25f);	// Steam #66C0F4
+		private static readonly Color ItchIoTint = new(0.98f, 0.361f, 0.361f, 0.25f);	// itch.io #FA5C5C
+		private static readonly GUIContent StandaloneLabel = new("Standalone");
+		private static readonly GUIContent SteamLabel = new("Steam");
+		private static readonly GUIContent ItchIoLabel = new("Itch.io");
+		private static GUIStyle _sectionStyle_internal = null;	// Caching only, use the property instead
+		private static GUIStyle _sectionTitleStyle_internal = null;	// Caching only, use the property instead
+
+		private Vector2 _sectionsScroll = Vector2.zero;
 
 
 		#region Constructors
@@ -43,6 +56,69 @@ namespace DragonResonance.Editor.Settings
 						BuildDefines.SetDefinitionState(BuildDefinition, true);
 				#endif
 			}
+
+		#if ENABLE_UNIBUILDER
+			protected override bool OnPropertyGUI(SerializedProperty property) => property.name is
+				nameof(UniBuilderSettings.Standalone) or
+				nameof(UniBuilderSettings.Steam) or
+				nameof(UniBuilderSettings.ItchIo);	// Drawn in their own sections instead
+		#endif
+
+			protected override void OnAfterGUI(string searchContext)
+			{
+				#if ENABLE_UNIBUILDER
+				EditorGUILayout.Space(SmallPadding);
+				_sectionsScroll = EditorGUILayout.BeginScrollView(_sectionsScroll);
+				{
+					DrawPlatformSection(StandaloneLabel, StandaloneTint, this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.Standalone)));
+					DrawPlatformSection(SteamLabel, SteamTint, this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.Steam)));
+					DrawPlatformSection(ItchIoLabel, ItchIoTint, this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.ItchIo)));
+				}
+				EditorGUILayout.EndScrollView();
+				#endif
+			}
+
+		#endregion
+
+
+		#region Privates
+
+			private static void DrawPlatformSection(GUIContent title, Color tint, SerializedProperty property)
+			{
+				Rect sectionRect = EditorGUILayout.BeginVertical(SectionStyle);
+				{
+					if (Event.current.type == EventType.Repaint)
+						EditorGUI.DrawRect(sectionRect, tint);
+
+					GUILayout.Label(title, SectionTitleStyle);
+					EditorGUILayout.Space(SmallPadding);
+
+					SerializedProperty child = property.Copy();
+					SerializedProperty end = property.GetEndProperty();
+					if (child.NextVisible(true)) {
+						do {
+							if (SerializedProperty.EqualContents(child, end)) break;
+							EditorGUILayout.PropertyField(child, true);
+						}
+						while (child.NextVisible(false));
+					}
+				}
+				EditorGUILayout.EndVertical();
+				EditorGUILayout.Space(SmallPadding);
+			}
+
+		#endregion
+
+
+		#region Properties
+
+			private static GUIStyle SectionStyle => (_sectionStyle_internal ??= new GUIStyle() {
+				padding = new RectOffset(SmallPadding, SmallPadding, SmallPadding, SmallPadding),
+			});
+
+			private static GUIStyle SectionTitleStyle => (_sectionTitleStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
+				fontSize = SectionTitleFontSize,
+			});
 
 		#endregion
 	}

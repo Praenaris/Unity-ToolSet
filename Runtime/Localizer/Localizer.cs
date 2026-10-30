@@ -106,6 +106,32 @@ namespace DragonResonance.Localizer
 				return preferredLanguages.FirstMatchOrFallback(availableLanguages, fallback);
 			}
 
+			private static void ApplyBlacklistFilters()
+			{
+				foreach ((string key, string pattern) in _settings.BlacklistFilters) {
+					int rowIndex = _dataSheet.GetHeadingRowIndex(key);
+					if (rowIndex == -1) continue;	// That key isn't in the data
+
+					Regex regex = null;
+					try {
+						regex = new Regex(pattern);
+					}
+					catch (ArgumentException exception) {
+						Log.Exception(exception, $"The blacklist filter of {key} has an invalid regex \"{pattern}\"");
+						continue;
+					}
+
+					List<string> filteredRow = _dataSheet.Data[rowIndex];
+					for (int columnIndex = (filteredRow.Count - 1); columnIndex > 0; columnIndex--) {	// Backwards to avoid out of bounds
+						if (!regex.IsMatch(filteredRow[columnIndex] ?? string.Empty)) continue;
+
+						Log.Info($"Column {_dataSheet.HeadingRow[columnIndex]} removed by the blacklist filter of {key}");
+						foreach (List<string> row in _dataSheet.Data)
+							row.RemoveAt(columnIndex);
+					}
+				}
+			}
+
 			private static IEnumerable<string> GetKeys(string rawText) =>
 				Regex.Matches(rawText, @"\{(\w+)\}").Select(match => match.Groups[1].Value);
 

@@ -23,6 +23,7 @@ namespace Praenaris.UniBuilder
 		public bool ItchIoTest3 = false;
 
 		public UniBuildProfileEntry[] BuildProfiles = { };
+		public bool StopPipelineOnFailure = true;
 	}
 }
 

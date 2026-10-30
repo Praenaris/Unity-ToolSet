@@ -12,6 +12,8 @@ namespace Praenaris.UniBuilder
 		public string ProfileGuid;
 		public bool Included;
 		public string OutputPath;
+		public string LastBuildTime;	// ISO 8601, empty if never built
+		public bool LastBuildSucceeded;
 	}
 }
 

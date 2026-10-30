@@ -3,6 +3,8 @@
 
 using DragonResonance.Editor.Building;
 using DragonResonance.Extensions;
+using DragonResonance.Logging;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -74,6 +76,12 @@ namespace DragonResonance.Editor.Settings
 
 				EditorGUILayout.BeginVertical(paddedSection);
 				{
+					if (_serializedSettings == null) {
+						DrawUnloadedSettings();
+						EditorGUILayout.EndVertical();
+						return;
+					}
+
 					_serializedSettings.Update();
 					OnBeforeGUI(searchContext);
 
@@ -108,27 +116,49 @@ namespace DragonResonance.Editor.Settings
 
 			private void LoadOrCreateSettings()
 			{
-				string settingsName = typeof(TSettings).Name;
-
-				string[] guids = AssetDatabase.FindAssets($"t:{settingsName}");
-				if (guids.Length.IsZero()) {
-					_settings = ScriptableObject.CreateInstance<TSettings>();
-					AssetDatabase.CreateAsset(_settings, $"Assets/{settingsName}.asset");
-					AssetDatabase.SaveAssets();
+				string[] guids = AssetDatabase.FindAssets($"t:{SettingsName}");
+				if (!guids.Length.IsZero()) {
+					_settings = AssetDatabase.LoadAssetAtPath<TSettings>(AssetDatabase.GUIDToAssetPath(guids.First()));
+				}
+				else if (File.Exists(DefaultSettingsPath)) {	// There but not indexed as that type yet (its define was off, a pending reimport...), it's never overwritten
+					AssetDatabase.ImportAsset(DefaultSettingsPath, ImportAssetOptions.ForceUpdate);
+					_settings = AssetDatabase.LoadAssetAtPath<TSettings>(DefaultSettingsPath);
+					if (_settings == null) {
+						Log.Error($"{DefaultSettingsPath} exists but can't be loaded as {SettingsName} (missing script?), fix or remove it, it won't be overwritten");
+						return;
+					}
 				}
 				else {
-					string path = AssetDatabase.GUIDToAssetPath(guids.First());
-					_settings = AssetDatabase.LoadAssetAtPath<TSettings>(path);
+					_settings = ScriptableObject.CreateInstance<TSettings>();
+					AssetDatabase.CreateAsset(_settings, DefaultSettingsPath);
+					AssetDatabase.SaveAssets();
 				}
 
 				PreloadedAssets.Add(_settings);
 				_serializedSettings = new SerializedObject(_settings);
 			}
 
+			private void DrawUnloadedSettings()
+			{
+				EditorGUILayout.HelpBox($"{DefaultSettingsPath} couldn't be loaded as {SettingsName}, see the Console. Fix it and retry, or remove it to start over with a new one.", MessageType.Error);
+				if (GUILayout.Button("Retry"))
+					LoadOrCreateSettings();
+				if (GUILayout.Button("Remove it") && EditorUtility.DisplayDialog($"Remove {DefaultSettingsPath}?",
+					$"It goes to the system trash, and a new {SettingsName} with the default settings replaces it.",
+					"Yes, remove",
+					"No, cancel")) {
+					AssetDatabase.MoveAssetToTrash(DefaultSettingsPath);
+					LoadOrCreateSettings();
+				}
+			}
+
 		#endregion
 
 
 		#region Properties
+
+			private static string SettingsName => typeof(TSettings).Name;
+			private static string DefaultSettingsPath => $"Assets/{SettingsName}.asset";
 
 			protected TSettings Settings => _settings;
 			protected SerializedObject SerializedSettings => _serializedSettings;

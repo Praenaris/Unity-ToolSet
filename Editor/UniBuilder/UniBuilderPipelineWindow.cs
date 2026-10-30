@@ -1,15 +1,41 @@
-#if ENABLE_UNIBUILDER
+#if UNITY_EDITOR && ENABLE_UNIBUILDER
 
 
-using DragonResonance.Behaviours;
+using UnityEditor;
 using UnityEngine;
 
 
 namespace Praenaris.UniBuilder
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/UniBuilder", fileName = "New UniBuilder Settings")]
-	public class UniBuilderSettings : SingletonScriptableObject<UniBuilderSettings>
+	public class UniBuilderPipelineWindow : EditorWindow
 	{
+		private const string WindowTitle = "UniBuilder Pipeline";
+
+
+		#region Events
+
+			private void OnGUI()
+			{
+				if (GUILayout.Button("Build All"))
+					BuildAll();
+			}
+
+		#endregion
+
+
+		#region Publics
+
+			[MenuItem("Window/Praenaris/" + WindowTitle)]
+			public static void Open() => GetWindow<UniBuilderPipelineWindow>(WindowTitle);
+
+		#endregion
+
+
+		#region Privates
+
+			private void BuildAll() { }	// Pending
+
+		#endregion
 	}
 }
 

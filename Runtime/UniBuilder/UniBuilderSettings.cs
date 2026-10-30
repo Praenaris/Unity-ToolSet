@@ -10,9 +10,17 @@ namespace Praenaris.UniBuilder
 	[CreateAssetMenu(menuName = "Praenaris/Settings/UniBuilder", fileName = "New UniBuilder Settings")]
 	public class UniBuilderSettings : SingletonScriptableObject<UniBuilderSettings>
 	{
-		public PlatformBuildConfig Standalone = new();
-		public PlatformBuildConfig Steam = new();
-		public PlatformBuildConfig ItchIo = new();
+		public string StandaloneTest1 = "";
+		public int StandaloneTest2 = 0;
+		public bool StandaloneTest3 = false;
+
+		public string SteamTest1 = "";
+		public int SteamTest2 = 0;
+		public bool SteamTest3 = false;
+
+		public string ItchIoTest1 = "";
+		public int ItchIoTest2 = 0;
+		public bool ItchIoTest3 = false;
 	}
 }
 

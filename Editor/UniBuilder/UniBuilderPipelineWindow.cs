@@ -1,17 +1,41 @@
-#if ENABLE_UNIBUILDER
+#if UNITY_EDITOR && ENABLE_UNIBUILDER
 
 
-using System;
+using UnityEditor;
+using UnityEngine;
 
 
 namespace Praenaris.UniBuilder
 {
-	[Serializable]
-	public struct PlatformBuildConfig
+	public class UniBuilderPipelineWindow : EditorWindow
 	{
-		public string Test1;
-		public int Test2;
-		public bool Test3;
+		private const string WindowTitle = "UniBuilder Pipeline";
+
+
+		#region Events
+
+			private void OnGUI()
+			{
+				if (GUILayout.Button("Build All"))
+					BuildAll();
+			}
+
+		#endregion
+
+
+		#region Publics
+
+			[MenuItem("Window/Praenaris/" + WindowTitle)]
+			public static void Open() => GetWindow<UniBuilderPipelineWindow>(WindowTitle);
+
+		#endregion
+
+
+		#region Privates
+
+			private void BuildAll() { }	// Pending
+
+		#endregion
 	}
 }
 

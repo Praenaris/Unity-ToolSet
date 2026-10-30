@@ -7,6 +7,7 @@ using UnityEngine;
 
 #if ENABLE_UNIBUILDER
 using Praenaris.UniBuilder;
+using System;
 #endif
 
 
@@ -28,6 +29,12 @@ namespace DragonResonance.Editor.Settings
 		private static readonly GUIContent StandaloneLabel = new("Standalone");
 		private static readonly GUIContent SteamLabel = new("Steam");
 		private static readonly GUIContent ItchIoLabel = new("Itch.io");
+		private static readonly GUIContent OpenPipelineLabel = new("Open UniBuilder Pipeline");
+	#if ENABLE_UNIBUILDER
+		private static readonly string[] StandaloneFields = { nameof(UniBuilderSettings.StandaloneTest1), nameof(UniBuilderSettings.StandaloneTest2), nameof(UniBuilderSettings.StandaloneTest3) };
+		private static readonly string[] SteamFields = { nameof(UniBuilderSettings.SteamTest1), nameof(UniBuilderSettings.SteamTest2), nameof(UniBuilderSettings.SteamTest3) };
+		private static readonly string[] ItchIoFields = { nameof(UniBuilderSettings.ItchIoTest1), nameof(UniBuilderSettings.ItchIoTest2), nameof(UniBuilderSettings.ItchIoTest3) };
+	#endif
 		private static GUIStyle _sectionStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _sectionTitleStyle_internal = null;	// Caching only, use the property instead
 
@@ -58,21 +65,23 @@ namespace DragonResonance.Editor.Settings
 			}
 
 		#if ENABLE_UNIBUILDER
-			protected override bool OnPropertyGUI(SerializedProperty property) => property.name is
-				nameof(UniBuilderSettings.Standalone) or
-				nameof(UniBuilderSettings.Steam) or
-				nameof(UniBuilderSettings.ItchIo);	// Drawn in their own sections instead
+			protected override bool OnPropertyGUI(SerializedProperty property) => (Array.IndexOf(StandaloneFields, property.name) >= 0)
+				|| (Array.IndexOf(SteamFields, property.name) >= 0)
+				|| (Array.IndexOf(ItchIoFields, property.name) >= 0);	// Drawn in their own sections instead
 		#endif
 
 			protected override void OnAfterGUI(string searchContext)
 			{
 				#if ENABLE_UNIBUILDER
 				EditorGUILayout.Space(SmallPadding);
+				if (GUILayout.Button(OpenPipelineLabel))
+					UniBuilderPipelineWindow.Open();
+				EditorGUILayout.Space(SmallPadding);
 				_sectionsScroll = EditorGUILayout.BeginScrollView(_sectionsScroll);
 				{
-					DrawPlatformSection(StandaloneLabel, StandaloneTint, this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.Standalone)));
-					DrawPlatformSection(SteamLabel, SteamTint, this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.Steam)));
-					DrawPlatformSection(ItchIoLabel, ItchIoTint, this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.ItchIo)));
+					DrawPlatformSection(StandaloneLabel, StandaloneTint, StandaloneFields);
+					DrawPlatformSection(SteamLabel, SteamTint, SteamFields);
+					DrawPlatformSection(ItchIoLabel, ItchIoTint, ItchIoFields);
 				}
 				EditorGUILayout.EndScrollView();
 				#endif
@@ -81,9 +90,10 @@ namespace DragonResonance.Editor.Settings
 		#endregion
 
 
+	#if ENABLE_UNIBUILDER
 		#region Privates
 
-			private static void DrawPlatformSection(GUIContent title, Color tint, SerializedProperty property)
+			private void DrawPlatformSection(GUIContent title, Color tint, string[] fieldNames)
 			{
 				Rect sectionRect = EditorGUILayout.BeginVertical(SectionStyle);
 				{
@@ -93,21 +103,15 @@ namespace DragonResonance.Editor.Settings
 					GUILayout.Label(title, SectionTitleStyle);
 					EditorGUILayout.Space(SmallPadding);
 
-					SerializedProperty child = property.Copy();
-					SerializedProperty end = property.GetEndProperty();
-					if (child.NextVisible(true)) {
-						do {
-							if (SerializedProperty.EqualContents(child, end)) break;
-							EditorGUILayout.PropertyField(child, true);
-						}
-						while (child.NextVisible(false));
-					}
+					foreach (string fieldName in fieldNames)
+						EditorGUILayout.PropertyField(this.SerializedSettings.FindProperty(fieldName), true);
 				}
 				EditorGUILayout.EndVertical();
 				EditorGUILayout.Space(SmallPadding);
 			}
 
 		#endregion
+	#endif
 
 
 		#region Properties

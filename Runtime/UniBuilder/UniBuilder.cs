@@ -1,15 +1,21 @@
 #if ENABLE_UNIBUILDER
 
 
-using DragonResonance.Behaviours;
+using UnityEngine.Scripting;
 using UnityEngine;
 
 
 namespace Praenaris.UniBuilder
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/UniBuilder", fileName = "New UniBuilder Settings")]
-	public class UniBuilderSettings : SingletonScriptableObject<UniBuilderSettings>
+	[Preserve]
+	public class UniBuilder : ASubsystem<UniBuilder, UniBuilderSettings>
 	{
+		#region Events
+
+			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+			private static void Initialize() => Startup();
+
+		#endregion
 	}
 }
 

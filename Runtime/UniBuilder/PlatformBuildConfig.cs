@@ -1,22 +1,17 @@
 #if ENABLE_UNIBUILDER
 
 
-using Praenaris;
-using UnityEngine.Scripting;
-using UnityEngine;
+using System;
 
 
 namespace Praenaris.UniBuilder
 {
-	[Preserve]
-	public class UniBuilder : ASubsystem<UniBuilder, UniBuilderSettings>
+	[Serializable]
+	public struct PlatformBuildConfig
 	{
-		#region Events
-
-			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-			private static void Initialize() => Startup();
-
-		#endregion
+		public string Test1;
+		public int Test2;
+		public bool Test3;
 	}
 }
 

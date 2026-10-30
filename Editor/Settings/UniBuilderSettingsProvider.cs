@@ -67,7 +67,9 @@ namespace DragonResonance.Editor.Settings
 		#if ENABLE_UNIBUILDER
 			protected override bool OnPropertyGUI(SerializedProperty property) => (Array.IndexOf(StandaloneFields, property.name) >= 0)
 				|| (Array.IndexOf(SteamFields, property.name) >= 0)
-				|| (Array.IndexOf(ItchIoFields, property.name) >= 0);	// Drawn in their own sections instead
+				|| (Array.IndexOf(ItchIoFields, property.name) >= 0)	// Drawn in their own sections instead
+				|| (property.name == nameof(UniBuilderSettings.BuildProfiles))
+				|| (property.name == nameof(UniBuilderSettings.StopPipelineOnFailure));	// Edited from the pipeline window instead
 		#endif
 
 			protected override void OnAfterGUI(string searchContext)

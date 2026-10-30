@@ -21,6 +21,9 @@ namespace Praenaris.UniBuilder
 		public string ItchIoTest1 = "";
 		public int ItchIoTest2 = 0;
 		public bool ItchIoTest3 = false;
+
+		public UniBuildProfileEntry[] BuildProfiles = { };
+		public bool StopPipelineOnFailure = true;
 	}
 }
 

@@ -43,6 +43,7 @@ namespace Praenaris.UniBuilder
 		private static readonly GUIContent BrowseLabel = new("…", "Picks the output folder");
 		private static GUIStyle _sectionStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _sectionTitleStyle_internal = null;	// Caching only, use the property instead
+		private static GUIStyle _buildVersionStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _buildTimeStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _succeededStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _failedStyle_internal = null;	// Caching only, use the property instead
@@ -217,6 +218,7 @@ namespace Praenaris.UniBuilder
 				}
 
 				bool succeeded = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildSucceeded)).boolValue;
+				GUILayout.Label($"v{entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue}", BuildVersionStyle);
 				GUILayout.Label(lastBuildTime, BuildTimeStyle);
 				GUILayout.Label((succeeded ? "Success" : "Fail"), (succeeded ? SucceededStyle : FailedStyle));
 			}
@@ -335,6 +337,7 @@ namespace Praenaris.UniBuilder
 
 				SerializedProperty entries = serializedSettings.FindProperty(nameof(UniBuilderSettings.BuildProfiles));
 				SerializedProperty entry = entries.GetArrayElementAtIndex(FindOrAddEntryIndex(entries, profile));
+				entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue = PlayerSettings.bundleVersion;
 				entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildTime)).stringValue = DateTime.Now.ToString("s");	// ISO 8601
 				entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildSucceeded)).boolValue = succeeded;
 				serializedSettings.ApplyModifiedPropertiesWithoutUndo();
@@ -352,6 +355,7 @@ namespace Praenaris.UniBuilder
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.ProfileGuid)).stringValue = profile.Guid;
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.Included)).boolValue = false;
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue = $"{DefaultOutputFolder}/{profile.Profile.name}";
+				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue = string.Empty;
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildTime)).stringValue = string.Empty;
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildSucceeded)).boolValue = false;
 				return (entries.arraySize - 1);
@@ -377,6 +381,10 @@ namespace Praenaris.UniBuilder
 
 			private static GUIStyle SectionStyle => (_sectionStyle_internal ??= new GUIStyle() {
 				padding = new RectOffset(SectionPadding, SectionPadding, SectionPadding, SectionPadding),
+			});
+
+			private static GUIStyle BuildVersionStyle => (_buildVersionStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
+				alignment = TextAnchor.MiddleRight,
 			});
 
 			private static GUIStyle BuildTimeStyle => (_buildTimeStyle_internal ??= new GUIStyle(EditorStyles.miniLabel) {

@@ -28,6 +28,7 @@ namespace Praenaris.UniBuilder
 		private const int SectionTitleFontSize = 14;
 		private const int MinRecentBuildDays = 1;
 		private const int MaxRecentBuildDays = 365;
+		private const string LastBuildPrefKey = "Praenaris.UniBuilder.{0}.{1}.";	// Project and profile GUIDs, EditorPrefs are shared by every project
 
 		private static readonly Color IncludedTint = new(0.4f, 0.8f, 0.4f, 0.2f);
 		private static readonly Color ExcludedTint = new(0.5f, 0.5f, 0.5f, 0.1f);
@@ -205,7 +206,7 @@ namespace Praenaris.UniBuilder
 							UnityEngine.GUI.backgroundColor = previousColor;
 						}
 						EditorGUILayout.EndHorizontal();
-						DrawLastBuild(entry);
+						DrawLastBuild(profile, entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue);
 					}
 					EditorGUILayout.EndVertical();
 				}
@@ -214,18 +215,18 @@ namespace Praenaris.UniBuilder
 				return direction;
 			}
 
-			private static void DrawLastBuild(SerializedProperty entry)
+			private static void DrawLastBuild(ProfileInfo profile, int recentBuildDays)
 			{
-				string lastBuildTime = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildTime)).stringValue;
+				string prefKey = GetLastBuildPrefKey(profile);
+				string lastBuildTime = EditorPrefs.GetString(prefKey + "Time", string.Empty);
 				if (string.IsNullOrEmpty(lastBuildTime)) {
 					GUILayout.Label("Never built", BuildTimeStyle);
 					return;
 				}
 
-				bool succeeded = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildSucceeded)).boolValue;
-				string lastBuildVersion = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue;
+				bool succeeded = EditorPrefs.GetBool(prefKey + "Succeeded", false);
+				string lastBuildVersion = EditorPrefs.GetString(prefKey + "Version", string.Empty);
 				GUILayout.Label(lastBuildVersion, ((lastBuildVersion == Application.version) ? SucceededStyle : FailedStyle));	// Green while it's still the current version
-				int recentBuildDays = entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue;
 				GUILayout.Label(lastBuildTime, (!DateTime.TryParse(lastBuildTime, out DateTime lastBuildDate)
 					? BuildTimeStyle
 					: (((DateTime.Now - lastBuildDate).TotalDays < recentBuildDays) ? RecentBuildTimeStyle : OldBuildTimeStyle)));
@@ -341,17 +342,15 @@ namespace Praenaris.UniBuilder
 
 			private static void RecordBuild(ProfileInfo profile, bool succeeded)
 			{
-				SerializedObject serializedSettings = LoadSerializedSettings();
-				if (serializedSettings == null) return;
+				string prefKey = GetLastBuildPrefKey(profile);
+				EditorPrefs.SetBool(prefKey + "Succeeded", succeeded);
+				if (!succeeded) return;	// Keeps the latest successful build's version and time
 
-				SerializedProperty entries = serializedSettings.FindProperty(nameof(UniBuilderSettings.BuildProfiles));
-				SerializedProperty entry = entries.GetArrayElementAtIndex(FindOrAddEntryIndex(entries, profile));
-				entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue = PlayerSettings.bundleVersion;
-				entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildTime)).stringValue = DateTime.Now.ToString("s");	// ISO 8601
-				entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildSucceeded)).boolValue = succeeded;
-				serializedSettings.ApplyModifiedPropertiesWithoutUndo();
-				AssetDatabase.SaveAssetIfDirty(serializedSettings.targetObject);
+				EditorPrefs.SetString(prefKey + "Version", PlayerSettings.bundleVersion);
+				EditorPrefs.SetString(prefKey + "Time", DateTime.Now.ToString("s"));	// ISO 8601
 			}
+
+			private static string GetLastBuildPrefKey(ProfileInfo profile) => string.Format(LastBuildPrefKey, PlayerSettings.productGUID, profile.Guid);
 
 			private static int FindOrAddEntryIndex(SerializedProperty entries, ProfileInfo profile)
 			{
@@ -364,9 +363,6 @@ namespace Praenaris.UniBuilder
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.ProfileGuid)).stringValue = profile.Guid;
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.Included)).boolValue = false;
 				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue = $"{DefaultOutputFolder}/{profile.Profile.name}";
-				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue = string.Empty;
-				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildTime)).stringValue = string.Empty;
-				newEntry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildSucceeded)).boolValue = false;
 				return (entries.arraySize - 1);
 			}
 

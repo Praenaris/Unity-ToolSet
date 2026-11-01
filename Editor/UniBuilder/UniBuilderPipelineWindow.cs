@@ -26,25 +26,29 @@ namespace Praenaris.UniBuilder
 		private const float SideColumnWidth = 160f;
 		private const int SectionPadding = 12;
 		private const int SectionTitleFontSize = 14;
+		private const int MinRecentBuildDays = 1;
+		private const int MaxRecentBuildDays = 365;
 
 		private static readonly Color IncludedTint = new(0.4f, 0.8f, 0.4f, 0.2f);
 		private static readonly Color ExcludedTint = new(0.5f, 0.5f, 0.5f, 0.1f);
 		private static readonly Color BuildAllColor = new(0.4f, 0.8f, 0.4f, 1f);
 		private static readonly Color SucceededColor = new(0.3f, 0.85f, 0.3f, 1f);
 		private static readonly Color FailedColor = new(0.95f, 0.3f, 0.3f, 1f);
-		private static readonly GUIContent OpenBuildProfilesLabel = new("Open Build Profiles", "Opens the Build Profiles window to edit them");
-		private static readonly GUIContent StopOnFailureLabel = new("Stop the pipeline when a build fails", "Otherwise it carries on with the next profiles");
-		private static readonly GUIContent BuildAllLabel = new("Build All", "Builds every profile in the pipeline, in order");
-		private static readonly GUIContent MoveUpLabel = new("▲", "Moves it earlier in the pipeline");
-		private static readonly GUIContent MoveDownLabel = new("▼", "Moves it later in the pipeline");
-		private static readonly GUIContent SelectLabel = new("Select", "Selects the build profile asset");
-		private static readonly GUIContent BuildLabel = new("Build", "Builds this profile alone");
-		private static readonly GUIContent OutputPathLabel = new("Output path", "Where the build goes, relative to the project folder");
-		private static readonly GUIContent BrowseLabel = new("…", "Picks the output folder");
+		private static readonly GUIContent OpenBuildProfilesLabel = new("Open Build Profiles");
+		private static readonly GUIContent StopOnFailureLabel = new("Stop the pipeline when a build fails");
+		private static readonly GUIContent RecentBuildDaysLabel = new("Recent build days");
+		private static readonly GUIContent BuildAllLabel = new("Build All");
+		private static readonly GUIContent MoveUpLabel = new("▲");
+		private static readonly GUIContent MoveDownLabel = new("▼");
+		private static readonly GUIContent SelectLabel = new("Select");
+		private static readonly GUIContent BuildLabel = new("Build");
+		private static readonly GUIContent OutputPathLabel = new("Output path");
+		private static readonly GUIContent BrowseLabel = new("…");
 		private static GUIStyle _sectionStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _sectionTitleStyle_internal = null;	// Caching only, use the property instead
-		private static GUIStyle _buildVersionStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _buildTimeStyle_internal = null;	// Caching only, use the property instead
+		private static GUIStyle _recentBuildTimeStyle_internal = null;	// Caching only, use the property instead
+		private static GUIStyle _oldBuildTimeStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _succeededStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _failedStyle_internal = null;	// Caching only, use the property instead
 
@@ -122,6 +126,7 @@ namespace Praenaris.UniBuilder
 				bool isStoppingOnFailure = EditorGUILayout.ToggleLeft(StopOnFailureLabel, stopOnFailure.boolValue);
 				if (isStoppingOnFailure != stopOnFailure.boolValue)
 					stopOnFailure.boolValue = isStoppingOnFailure;
+				EditorGUILayout.IntSlider(this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)), MinRecentBuildDays, MaxRecentBuildDays, RecentBuildDaysLabel);
 
 				if (GUILayout.Button(OpenBuildProfilesLabel))
 					EditorApplication.ExecuteMenuItem(BuildProfilesMenuPath);
@@ -218,8 +223,12 @@ namespace Praenaris.UniBuilder
 				}
 
 				bool succeeded = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildSucceeded)).boolValue;
-				GUILayout.Label($"v{entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue}", BuildVersionStyle);
-				GUILayout.Label(lastBuildTime, BuildTimeStyle);
+				string lastBuildVersion = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.LastBuildVersion)).stringValue;
+				GUILayout.Label(lastBuildVersion, ((lastBuildVersion == Application.version) ? SucceededStyle : FailedStyle));	// Green while it's still the current version
+				int recentBuildDays = entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue;
+				GUILayout.Label(lastBuildTime, (!DateTime.TryParse(lastBuildTime, out DateTime lastBuildDate)
+					? BuildTimeStyle
+					: (((DateTime.Now - lastBuildDate).TotalDays < recentBuildDays) ? RecentBuildTimeStyle : OldBuildTimeStyle)));
 				GUILayout.Label((succeeded ? "Success" : "Fail"), (succeeded ? SucceededStyle : FailedStyle));
 			}
 
@@ -289,7 +298,7 @@ namespace Praenaris.UniBuilder
 					return false;
 				}
 
-				string locationPath = GetLocationPath(profile.Target, outputPath);
+				string locationPath = GetLocationPath(profile, outputPath);
 				Log.Info($"Building {profile.Profile.name} into {locationPath} ...", profile.Profile);
 				BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerWithProfileOptions() {
 					buildProfile = profile.Profile,
@@ -306,14 +315,14 @@ namespace Praenaris.UniBuilder
 				return succeeded;
 			}
 
-			private static string GetLocationPath(BuildTarget target, string outputPath)
+			private static string GetLocationPath(ProfileInfo profile, string outputPath)
 			{
 				string folder = Path.GetFullPath(Path.Combine(ProjectFolder, outputPath));
-				string extension = target switch {
+				string extension = profile.Target switch {
 					BuildTarget.StandaloneWindows or BuildTarget.StandaloneWindows64 => ".exe",
 					BuildTarget.StandaloneLinux64 => ".run",
 					BuildTarget.StandaloneOSX => ".app",
-					BuildTarget.Android => ".apk",
+					BuildTarget.Android => (profile.IsAppBundle ? ".aab" : ".apk"),
 					_ => null,
 				};
 				return ((extension != null) ? Path.Combine(folder, (PlayerSettings.productName + extension)) : folder);	// Executables go inside the folder, the rest (Web...) are the folder itself
@@ -383,12 +392,16 @@ namespace Praenaris.UniBuilder
 				padding = new RectOffset(SectionPadding, SectionPadding, SectionPadding, SectionPadding),
 			});
 
-			private static GUIStyle BuildVersionStyle => (_buildVersionStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
+			private static GUIStyle BuildTimeStyle => (_buildTimeStyle_internal ??= new GUIStyle(EditorStyles.miniLabel) {
 				alignment = TextAnchor.MiddleRight,
 			});
 
-			private static GUIStyle BuildTimeStyle => (_buildTimeStyle_internal ??= new GUIStyle(EditorStyles.miniLabel) {
-				alignment = TextAnchor.MiddleRight,
+			private static GUIStyle RecentBuildTimeStyle => (_recentBuildTimeStyle_internal ??= new GUIStyle(BuildTimeStyle) {
+				normal = { textColor = SucceededColor },
+			});
+
+			private static GUIStyle OldBuildTimeStyle => (_oldBuildTimeStyle_internal ??= new GUIStyle(BuildTimeStyle) {
+				normal = { textColor = FailedColor },
 			});
 
 			private static GUIStyle SucceededStyle => (_succeededStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
@@ -416,6 +429,7 @@ namespace Praenaris.UniBuilder
 			public readonly BuildTarget Target;
 			public readonly string Platform;
 			public readonly string Development;
+			public readonly bool IsAppBundle;
 
 
 			public ProfileInfo(string guid, BuildProfile profile)
@@ -423,6 +437,7 @@ namespace Praenaris.UniBuilder
 				SerializedObject serializedProfile = new(profile);	// The target and the platform settings aren't public
 				BuildTarget target = (BuildTarget)serializedProfile.FindProperty("m_BuildTarget").intValue;
 				SerializedProperty development = serializedProfile.FindProperty("m_PlatformBuildProfile.m_Development");
+				SerializedProperty appBundle = serializedProfile.FindProperty("m_PlatformBuildProfile.m_BuildAppBundle");	// Android only
 
 				Guid = guid;
 				Profile = profile;
@@ -431,6 +446,7 @@ namespace Praenaris.UniBuilder
 					? $"{target} ({(StandaloneBuildSubtarget)serializedProfile.FindProperty("m_Subtarget").intValue})"
 					: target.ToString());
 				Development = ((development == null) ? "Unknown" : (development.boolValue ? "Yes" : "No"));
+				IsAppBundle = ((appBundle != null) && appBundle.boolValue);
 			}
 		}
 	}

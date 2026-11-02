@@ -24,10 +24,11 @@ namespace Praenaris.UniBuilder
 		private const string BuildProfilesMenuPath = "File/Build Profiles";
 		private const string DoNotsPattern = "[Dd]o[Nn]ot|[Dd]ont";	// Folders not meant to ship, like the burst debug information
 		private const float BuildAllButtonHeight = 32f;
+		private const float HeaderButtonsSpacing = 4f;
 		private const float BrowseButtonWidth = 24f;
-		private const float SideColumnWidth = 160f;
 		private const int SectionPadding = 12;
 		private const int SectionTitleFontSize = 14;
+		private const string BuildTimeFormat = "yyyy-MM-dd 'T' HH:mm:ss 'Z'";
 		private const int MinRecentBuildDays = 1;
 		private const int MaxRecentBuildDays = 365;
 		private const string LastBuildPrefKey = "Praenaris.UniBuilder.{0}.{1}.";	// Project and profile GUIDs, EditorPrefs are shared by every project
@@ -36,6 +37,7 @@ namespace Praenaris.UniBuilder
 		private static readonly Color ExcludedTint = new(0.5f, 0.5f, 0.5f, 0.1f);
 		private static readonly Color BuildAllColor = new(0.4f, 0.8f, 0.4f, 1f);
 		private static readonly Color RemoveDoNotsColor = new(1f, 0.6f, 0.2f, 1f);
+		private static readonly Color PushToStoresColor = new(1f, 0.9f, 0.3f, 1f);
 		private static readonly Color SucceededColor = new(0.3f, 0.85f, 0.3f, 1f);
 		private static readonly Color FailedColor = new(0.95f, 0.3f, 0.3f, 1f);
 		private static readonly GUIContent OpenBuildProfilesLabel = new("Open Build Profiles");
@@ -44,10 +46,12 @@ namespace Praenaris.UniBuilder
 		private static readonly GUIContent RecentBuildDaysLabel = new("Recent build days");
 		private static readonly GUIContent BuildAllLabel = new("Build All");
 		private static readonly GUIContent RemoveDoNotsLabel = new("Remove DoNots");
+		private static readonly GUIContent PushToStoresLabel = new("Push to Stores");
 		private static readonly GUIContent MoveUpLabel = new("▲");
 		private static readonly GUIContent MoveDownLabel = new("▼");
-		private static readonly GUIContent SelectLabel = new("Select");
+		private static readonly GUIContent SelectLabel = new("Select profile");
 		private static readonly GUIContent BuildLabel = new("Build");
+		private static readonly GUIContent PushLabel = new("Push");
 		private static readonly GUIContent OutputPathLabel = new("Output path");
 		private static readonly GUIContent BrowseLabel = new("…");
 		private static GUIStyle _sectionStyle_internal = null;	// Caching only, use the property instead
@@ -141,17 +145,26 @@ namespace Praenaris.UniBuilder
 				if (GUILayout.Button(OpenBuildProfilesLabel))
 					EditorApplication.ExecuteMenuItem(BuildProfilesMenuPath);
 
+				Rect rowRect = EditorGUILayout.GetControlRect(false, BuildAllButtonHeight);
+				float columnWidth = Mathf.Floor((rowRect.width - (2f * HeaderButtonsSpacing)) / 3f);	// Three equal columns, in whole pixels so the gaps match
+				Rect buttonRect = new(rowRect.x, rowRect.y, columnWidth, rowRect.height);
+
 				Color previousColor = UnityEngine.GUI.backgroundColor;
 				UnityEngine.GUI.backgroundColor = BuildAllColor;
 				EditorGUI.BeginDisabledGroup(includedCount == 0);
 				{
-					if (GUILayout.Button(BuildAllLabel, GUILayout.Height(BuildAllButtonHeight)))
+					if (UnityEngine.GUI.Button(buttonRect, BuildAllLabel))
 						EditorApplication.delayCall += BuildAll;	// Outside the GUI pass, building takes a while
 				}
 				EditorGUI.EndDisabledGroup();
+				buttonRect.x += (columnWidth + HeaderButtonsSpacing);
 				UnityEngine.GUI.backgroundColor = RemoveDoNotsColor;
-				if (GUILayout.Button(RemoveDoNotsLabel, GUILayout.Height(BuildAllButtonHeight)))
+				if (UnityEngine.GUI.Button(buttonRect, RemoveDoNotsLabel))
 					EditorApplication.delayCall += RemoveDoNots;	// Outside the GUI pass, it opens a dialog
+				buttonRect.x += (columnWidth + HeaderButtonsSpacing);
+				buttonRect.xMax = rowRect.xMax;	// The rounding leftover
+				UnityEngine.GUI.backgroundColor = PushToStoresColor;
+				UnityEngine.GUI.Button(buttonRect, PushToStoresLabel);	// TODO: Push the builds to the stores
 				UnityEngine.GUI.backgroundColor = previousColor;
 				EditorGUILayout.Space();
 			}
@@ -162,87 +175,114 @@ namespace Praenaris.UniBuilder
 				int direction = 0;
 				SerializedProperty included = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.Included));
 
-				Rect sectionRect = EditorGUILayout.BeginHorizontal(SectionStyle);
+				Rect sectionRect = EditorGUILayout.BeginVertical(SectionStyle);
 				{
 					if (Event.current.type == EventType.Repaint)
 						EditorGUI.DrawRect(sectionRect, (included.boolValue ? IncludedTint : ExcludedTint));
 
-					EditorGUILayout.BeginVertical();
+					EditorGUI.BeginDisabledGroup(position == 0);
+					{
+						if (GUILayout.Button(MoveUpLabel, EditorStyles.miniButton))
+							direction = -1;
+					}
+					EditorGUI.EndDisabledGroup();
+
+					EditorGUILayout.BeginHorizontal();
 					{
 						bool isIncluded = EditorGUILayout.ToggleLeft($"{position + 1}. {profile.Profile.name}", included.boolValue, SectionTitleStyle);
 						if (isIncluded != included.boolValue)
 							included.boolValue = isIncluded;
-						EditorGUILayout.Space(SectionPadding / 2f);
 
-						EditorGUI.BeginDisabledGroup(!included.boolValue);
-						{
-							EditorGUILayout.LabelField("Platform", profile.Platform);
-							EditorGUILayout.LabelField("Development", profile.Development);
-							EditorGUILayout.LabelField("Scenes", GetScenesSummary(profile.Profile));
-							EditorGUILayout.LabelField("Scripting defines", GetDefinesSummary(profile.Profile), EditorStyles.wordWrappedLabel);
-							DrawOutputPathField(profile.Profile, entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)));
+						if (GUILayout.Button(SelectLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
+							Selection.activeObject = profile.Profile;
+							EditorGUIUtility.PingObject(profile.Profile);
 						}
-						EditorGUI.EndDisabledGroup();
+
+						Color previousColor = UnityEngine.GUI.backgroundColor;
+						UnityEngine.GUI.backgroundColor = BuildAllColor;
+						if (GUILayout.Button(BuildLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
+							string outputPath = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue;
+							EditorApplication.delayCall += () => Build(profile, outputPath);	// Outside the GUI pass, building takes a while
+						}
+						UnityEngine.GUI.backgroundColor = PushToStoresColor;
+						GUILayout.Button(PushLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false));	// TODO: Push this build to its store
+						UnityEngine.GUI.backgroundColor = previousColor;
 					}
-					EditorGUILayout.EndVertical();
-					EditorGUILayout.Space(SectionPadding, false);
+					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.Space(SectionPadding / 2f);
 
-					EditorGUILayout.BeginVertical(GUILayout.Width(SideColumnWidth));
+					EditorGUILayout.BeginHorizontal();
 					{
-						EditorGUILayout.BeginHorizontal();
+						EditorGUILayout.BeginVertical();
 						{
-							GUILayout.FlexibleSpace();
-							EditorGUI.BeginDisabledGroup(position == 0);
+							EditorGUI.BeginDisabledGroup(!included.boolValue);
 							{
-								if (GUILayout.Button(MoveUpLabel, EditorStyles.miniButtonLeft, GUILayout.ExpandWidth(false)))
-									direction = -1;
+								EditorGUILayout.LabelField("Platform", profile.Platform);
+								EditorGUILayout.LabelField("Development", profile.Development);
+								EditorGUILayout.LabelField("Scenes", GetScenesSummary(profile.Profile));
+								DrawDefines(profile.Profile);
+								DrawOutputPathField(profile.Profile, entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)));
 							}
 							EditorGUI.EndDisabledGroup();
-							EditorGUI.BeginDisabledGroup(position == (count - 1));
-							{
-								if (GUILayout.Button(MoveDownLabel, EditorStyles.miniButtonRight, GUILayout.ExpandWidth(false)))
-									direction = 1;
-							}
-							EditorGUI.EndDisabledGroup();
-							if (GUILayout.Button(SelectLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
-								Selection.activeObject = profile.Profile;
-								EditorGUIUtility.PingObject(profile.Profile);
-							}
-
-							Color previousColor = UnityEngine.GUI.backgroundColor;
-							UnityEngine.GUI.backgroundColor = BuildAllColor;
-							if (GUILayout.Button(BuildLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
-								string outputPath = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue;
-								EditorApplication.delayCall += () => Build(profile, outputPath);	// Outside the GUI pass, building takes a while
-							}
-							UnityEngine.GUI.backgroundColor = previousColor;
 						}
-						EditorGUILayout.EndHorizontal();
+						EditorGUILayout.EndVertical();
+						EditorGUILayout.Space(SectionPadding, false);
+
 						DrawLastBuild(profile, entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue);
 					}
-					EditorGUILayout.EndVertical();
+					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.Space(SectionPadding / 2f);
+
+					EditorGUI.BeginDisabledGroup(position == (count - 1));
+					{
+						if (GUILayout.Button(MoveDownLabel, EditorStyles.miniButton))
+							direction = 1;
+					}
+					EditorGUI.EndDisabledGroup();
 				}
-				EditorGUILayout.EndHorizontal();
+				EditorGUILayout.EndVertical();
 				EditorGUILayout.Space(SectionPadding / 2f);
 				return direction;
 			}
 
+			private static void DrawDefines(BuildProfile profile)
+			{
+				string[] defines = profile.scriptingDefines;
+				if (defines.Length == 0)
+					EditorGUILayout.LabelField("Scripting defines", "None");
+				for (int defineIndex = 0; defineIndex < defines.Length; defineIndex++)
+					EditorGUILayout.LabelField(((defineIndex == 0) ? "Scripting defines" : " "), defines[defineIndex]);	// One per line, labelled once
+			}
+
 			private static void DrawLastBuild(ProfileInfo profile, int recentBuildDays)
+			{
+				List<(string Text, GUIStyle Style)> lines = GetLastBuildLines(profile, recentBuildDays);
+				float width = lines.Max(line => line.Style.CalcSize(new GUIContent(line.Text)).x);
+
+				EditorGUILayout.BeginVertical(GUILayout.Width(width));	// Exactly as wide as its widest line, its stretching labels would take half the row otherwise
+				{
+					foreach ((string text, GUIStyle style) in lines)
+						GUILayout.Label(text, style);
+				}
+				EditorGUILayout.EndVertical();
+			}
+
+			private static List<(string Text, GUIStyle Style)> GetLastBuildLines(ProfileInfo profile, int recentBuildDays)
 			{
 				string prefKey = GetLastBuildPrefKey(profile);
 				string lastBuildTime = EditorPrefs.GetString(prefKey + "Time", string.Empty);
-				if (string.IsNullOrEmpty(lastBuildTime)) {
-					GUILayout.Label("Never built", BuildTimeStyle);
-					return;
-				}
+				if (string.IsNullOrEmpty(lastBuildTime))
+					return new() { ("Never built", BuildTimeStyle) };
 
 				bool succeeded = EditorPrefs.GetBool(prefKey + "Succeeded", false);
 				string lastBuildVersion = EditorPrefs.GetString(prefKey + "Version", string.Empty);
-				GUILayout.Label(lastBuildVersion, ((lastBuildVersion == Application.version) ? SucceededStyle : FailedStyle));	// Green while it's still the current version
-				GUILayout.Label(lastBuildTime, (!DateTime.TryParse(lastBuildTime, out DateTime lastBuildDate)
-					? BuildTimeStyle
-					: (((DateTime.Now - lastBuildDate).TotalDays < recentBuildDays) ? RecentBuildTimeStyle : OldBuildTimeStyle)));
-				GUILayout.Label((succeeded ? "Success" : "Fail"), (succeeded ? SucceededStyle : FailedStyle));
+				return new() {
+					(lastBuildVersion, ((lastBuildVersion == Application.version) ? SucceededStyle : FailedStyle)),	// Green while it's still the current version
+					(DateTime.TryParse(lastBuildTime, out DateTime lastBuildDate)
+						? (lastBuildDate.ToString(BuildTimeFormat), (((DateTime.UtcNow - lastBuildDate).TotalDays < recentBuildDays) ? RecentBuildTimeStyle : OldBuildTimeStyle))
+						: (lastBuildTime, BuildTimeStyle)),
+					((succeeded ? "Success" : "Fail"), (succeeded ? SucceededStyle : FailedStyle)),
+				};
 			}
 
 			private static void DrawOutputPathField(BuildProfile profile, SerializedProperty outputPath)
@@ -264,9 +304,6 @@ namespace Praenaris.UniBuilder
 
 			private static string GetScenesSummary(BuildProfile profile) =>
 				$"{profile.GetScenesForBuild().Count(scene => scene.enabled)} ({(profile.overrideGlobalScenes ? "own list" : "global list")})";
-
-			private static string GetDefinesSummary(BuildProfile profile) =>
-				(profile.scriptingDefines.Any() ? string.Join(", ", profile.scriptingDefines) : "None");
 
 		#endregion
 
@@ -395,7 +432,7 @@ namespace Praenaris.UniBuilder
 				if (!succeeded) return;	// Keeps the latest successful build's version and time
 
 				EditorPrefs.SetString(prefKey + "Version", PlayerSettings.bundleVersion);
-				EditorPrefs.SetString(prefKey + "Time", DateTime.Now.ToString("s"));	// ISO 8601
+				EditorPrefs.SetString(prefKey + "Time", DateTime.UtcNow.ToString("s"));	// ISO 8601, in UTC
 			}
 
 			private static string GetLastBuildPrefKey(ProfileInfo profile) => string.Format(LastBuildPrefKey, PlayerSettings.productGUID, profile.Guid);

@@ -70,6 +70,7 @@ namespace DragonResonance.Editor.Settings
 				|| (Array.IndexOf(ItchIoFields, property.name) >= 0)	// Drawn in their own sections instead
 				|| (property.name == nameof(UniBuilderSettings.BuildProfiles))
 				|| (property.name == nameof(UniBuilderSettings.StopPipelineOnFailure))
+				|| (property.name == nameof(UniBuilderSettings.ConfirmDoNotsRemoval))
 				|| (property.name == nameof(UniBuilderSettings.RecentBuildDays));	// Edited from the pipeline window instead
 		#endif
 

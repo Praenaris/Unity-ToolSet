@@ -24,6 +24,7 @@ namespace Praenaris.UniBuilder
 
 		public UniBuildProfileEntry[] BuildProfiles = { };
 		public bool StopPipelineOnFailure = true;
+		public bool ConfirmDoNotsRemoval = true;
 		public int RecentBuildDays = 30;
 	}
 }

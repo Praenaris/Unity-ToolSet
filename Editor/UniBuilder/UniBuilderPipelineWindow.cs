@@ -5,6 +5,7 @@ using DragonResonance.Logging;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System;
 using UnityEditor.Build.Profile;
 using UnityEditor.Build.Reporting;
@@ -21,6 +22,7 @@ namespace Praenaris.UniBuilder
 		private const string SettingsPath = "Project/Praenaris/UniBuilder";
 		private const string DefaultOutputFolder = "Builds";
 		private const string BuildProfilesMenuPath = "File/Build Profiles";
+		private const string DoNotsPattern = "[Dd]o[Nn]ot|[Dd]ont";	// Folders not meant to ship, like the burst debug information
 		private const float BuildAllButtonHeight = 32f;
 		private const float BrowseButtonWidth = 24f;
 		private const float SideColumnWidth = 160f;
@@ -33,12 +35,15 @@ namespace Praenaris.UniBuilder
 		private static readonly Color IncludedTint = new(0.4f, 0.8f, 0.4f, 0.2f);
 		private static readonly Color ExcludedTint = new(0.5f, 0.5f, 0.5f, 0.1f);
 		private static readonly Color BuildAllColor = new(0.4f, 0.8f, 0.4f, 1f);
+		private static readonly Color RemoveDoNotsColor = new(1f, 0.6f, 0.2f, 1f);
 		private static readonly Color SucceededColor = new(0.3f, 0.85f, 0.3f, 1f);
 		private static readonly Color FailedColor = new(0.95f, 0.3f, 0.3f, 1f);
 		private static readonly GUIContent OpenBuildProfilesLabel = new("Open Build Profiles");
 		private static readonly GUIContent StopOnFailureLabel = new("Stop the pipeline when a build fails");
+		private static readonly GUIContent ConfirmDoNotsRemovalLabel = new("Ask before removing the DoNot folders");
 		private static readonly GUIContent RecentBuildDaysLabel = new("Recent build days");
 		private static readonly GUIContent BuildAllLabel = new("Build All");
+		private static readonly GUIContent RemoveDoNotsLabel = new("Remove DoNots");
 		private static readonly GUIContent MoveUpLabel = new("▲");
 		private static readonly GUIContent MoveDownLabel = new("▼");
 		private static readonly GUIContent SelectLabel = new("Select");
@@ -127,6 +132,10 @@ namespace Praenaris.UniBuilder
 				bool isStoppingOnFailure = EditorGUILayout.ToggleLeft(StopOnFailureLabel, stopOnFailure.boolValue);
 				if (isStoppingOnFailure != stopOnFailure.boolValue)
 					stopOnFailure.boolValue = isStoppingOnFailure;
+				SerializedProperty confirmDoNotsRemoval = this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.ConfirmDoNotsRemoval));
+				bool isConfirmingDoNotsRemoval = EditorGUILayout.ToggleLeft(ConfirmDoNotsRemovalLabel, confirmDoNotsRemoval.boolValue);
+				if (isConfirmingDoNotsRemoval != confirmDoNotsRemoval.boolValue)
+					confirmDoNotsRemoval.boolValue = isConfirmingDoNotsRemoval;
 				EditorGUILayout.IntSlider(this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)), MinRecentBuildDays, MaxRecentBuildDays, RecentBuildDaysLabel);
 
 				if (GUILayout.Button(OpenBuildProfilesLabel))
@@ -140,6 +149,9 @@ namespace Praenaris.UniBuilder
 						EditorApplication.delayCall += BuildAll;	// Outside the GUI pass, building takes a while
 				}
 				EditorGUI.EndDisabledGroup();
+				UnityEngine.GUI.backgroundColor = RemoveDoNotsColor;
+				if (GUILayout.Button(RemoveDoNotsLabel, GUILayout.Height(BuildAllButtonHeight)))
+					EditorApplication.delayCall += RemoveDoNots;	// Outside the GUI pass, it opens a dialog
 				UnityEngine.GUI.backgroundColor = previousColor;
 				EditorGUILayout.Space();
 			}
@@ -289,6 +301,42 @@ namespace Praenaris.UniBuilder
 					}
 				}
 				Log.Emphasis($"Pipeline finished, {builtCount} of {pipeline.Count} profiles built");
+			}
+
+			private void RemoveDoNots()
+			{
+				this.SerializedSettings.Update();
+				SerializedProperty entries = this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.BuildProfiles));
+				Regex doNotsRegex = new(DoNotsPattern);
+
+				List<string> doNots = new();
+				for (int entryIndex = 0; entryIndex < entries.arraySize; entryIndex++) {
+					SerializedProperty entry = entries.GetArrayElementAtIndex(entryIndex);
+					string guid = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.ProfileGuid)).stringValue;
+					if (!_profiles.Any(profile => (profile.Guid == guid))) continue;	// Its profile is gone
+
+					string folder = Path.GetFullPath(Path.Combine(ProjectFolder, entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue));
+					if (Directory.Exists(folder))
+						doNots.AddRange(Directory.GetDirectories(folder).Where(directory => doNotsRegex.IsMatch(Path.GetFileName(directory))));
+				}
+				doNots = doNots.Distinct().ToList();	// Profiles may share an output folder
+
+				if (doNots.Count == 0) {
+					Log.Info("There are no DoNot folders in the build folders");
+					return;
+				}
+				bool isConfirming = this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.ConfirmDoNotsRemoval)).boolValue;
+				if (isConfirming && !EditorUtility.DisplayDialog(RemoveDoNotsLabel.text, $"Delete these {doNots.Count} folders permanently?\n\n{string.Join("\n", doNots)}", "Delete", "Cancel")) return;
+
+				foreach (string doNot in doNots) {
+					try {
+						Directory.Delete(doNot, true);
+						Log.Info($"Removed {doNot}");
+					}
+					catch (Exception exception) {
+						Log.Exception(exception, $"Couldn't remove {doNot}");
+					}
+				}
 			}
 
 			/// <summary>Returns whether it was built.</summary>

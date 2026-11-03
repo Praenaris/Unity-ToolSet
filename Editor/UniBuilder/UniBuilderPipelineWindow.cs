@@ -37,6 +37,7 @@ namespace Praenaris.UniBuilder
 		private static readonly Color ExcludedTint = new(0.5f, 0.5f, 0.5f, 0.1f);
 		private static readonly Color BuildAllColor = new(0.4f, 0.8f, 0.4f, 1f);
 		private static readonly Color RemoveDoNotsColor = new(1f, 0.6f, 0.2f, 1f);
+		private static readonly Color ZipAllBuildsColor = new(0.3f, 0.85f, 0.8f, 1f);
 		private static readonly Color PushToStoresColor = new(1f, 0.9f, 0.3f, 1f);
 		private static readonly Color SucceededColor = new(0.3f, 0.85f, 0.3f, 1f);
 		private static readonly Color FailedColor = new(0.95f, 0.3f, 0.3f, 1f);
@@ -46,7 +47,8 @@ namespace Praenaris.UniBuilder
 		private static readonly GUIContent RecentBuildDaysLabel = new("Recent build days");
 		private static readonly GUIContent BuildAllLabel = new("Build All");
 		private static readonly GUIContent RemoveDoNotsLabel = new("Remove DoNots");
-		private static readonly GUIContent PushToStoresLabel = new("Push to Stores");
+		private static readonly GUIContent ZipAllBuildsLabel = new("Zip All Builds");
+		private static readonly GUIContent PushToStoresLabel = new("Push All to Stores");
 		private static readonly GUIContent MoveUpLabel = new("▲");
 		private static readonly GUIContent MoveDownLabel = new("▼");
 		private static readonly GUIContent SelectLabel = new("Select profile");
@@ -145,28 +147,36 @@ namespace Praenaris.UniBuilder
 				if (GUILayout.Button(OpenBuildProfilesLabel))
 					EditorApplication.ExecuteMenuItem(BuildProfilesMenuPath);
 
-				Rect rowRect = EditorGUILayout.GetControlRect(false, BuildAllButtonHeight);
-				float columnWidth = Mathf.Floor((rowRect.width - (2f * HeaderButtonsSpacing)) / 3f);	// Three equal columns, in whole pixels so the gaps match
-				Rect buttonRect = new(rowRect.x, rowRect.y, columnWidth, rowRect.height);
-
 				Color previousColor = UnityEngine.GUI.backgroundColor;
+				(Rect buildAllRect, Rect removeDoNotsRect) = GetHeaderButtonRects();
 				UnityEngine.GUI.backgroundColor = BuildAllColor;
 				EditorGUI.BeginDisabledGroup(includedCount == 0);
 				{
-					if (UnityEngine.GUI.Button(buttonRect, BuildAllLabel))
+					if (UnityEngine.GUI.Button(buildAllRect, BuildAllLabel))
 						EditorApplication.delayCall += BuildAll;	// Outside the GUI pass, building takes a while
 				}
 				EditorGUI.EndDisabledGroup();
-				buttonRect.x += (columnWidth + HeaderButtonsSpacing);
 				UnityEngine.GUI.backgroundColor = RemoveDoNotsColor;
-				if (UnityEngine.GUI.Button(buttonRect, RemoveDoNotsLabel))
+				if (UnityEngine.GUI.Button(removeDoNotsRect, RemoveDoNotsLabel))
 					EditorApplication.delayCall += RemoveDoNots;	// Outside the GUI pass, it opens a dialog
-				buttonRect.x += (columnWidth + HeaderButtonsSpacing);
-				buttonRect.xMax = rowRect.xMax;	// The rounding leftover
+
+				(Rect zipAllRect, Rect pushAllRect) = GetHeaderButtonRects();
+				UnityEngine.GUI.backgroundColor = ZipAllBuildsColor;
+				UnityEngine.GUI.Button(zipAllRect, ZipAllBuildsLabel);	// TODO: Zip the builds
 				UnityEngine.GUI.backgroundColor = PushToStoresColor;
-				UnityEngine.GUI.Button(buttonRect, PushToStoresLabel);	// TODO: Push the builds to the stores
+				UnityEngine.GUI.Button(pushAllRect, PushToStoresLabel);	// TODO: Push the builds to the stores
 				UnityEngine.GUI.backgroundColor = previousColor;
 				EditorGUILayout.Space();
+			}
+
+			/// <summary>Lays out a row of two equal columns, in whole pixels so the gaps match.</summary>
+			private static (Rect Left, Rect Right) GetHeaderButtonRects()
+			{
+				Rect rowRect = EditorGUILayout.GetControlRect(false, BuildAllButtonHeight);
+				float columnWidth = Mathf.Floor((rowRect.width - HeaderButtonsSpacing) / 2f);
+				Rect leftRect = new(rowRect.x, rowRect.y, columnWidth, rowRect.height);
+				Rect rightRect = Rect.MinMaxRect((leftRect.xMax + HeaderButtonsSpacing), rowRect.y, rowRect.xMax, rowRect.yMax);	// It takes the rounding leftover
+				return (leftRect, rightRect);
 			}
 
 			/// <summary>Returns -1 or 1 when moved earlier or later in the pipeline, 0 otherwise.</summary>

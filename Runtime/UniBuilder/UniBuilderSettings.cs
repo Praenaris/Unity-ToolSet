@@ -10,10 +10,6 @@ namespace Praenaris.UniBuilder
 	[CreateAssetMenu(menuName = "Praenaris/Settings/UniBuilder", fileName = "New UniBuilder Settings")]
 	public class UniBuilderSettings : SingletonScriptableObject<UniBuilderSettings>
 	{
-		public string StandaloneTest1 = "";
-		public int StandaloneTest2 = 0;
-		public bool StandaloneTest3 = false;
-
 		public string SteamTest1 = "";
 		public int SteamTest2 = 0;
 		public bool SteamTest3 = false;

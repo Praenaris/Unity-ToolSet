@@ -24,30 +24,41 @@ namespace Praenaris.UniBuilder
 		private const string BuildProfilesMenuPath = "File/Build Profiles";
 		private const string DoNotsPattern = "[Dd]o[Nn]ot|[Dd]ont";	// Folders not meant to ship, like the burst debug information
 		private const float BuildAllButtonHeight = 32f;
+		private const float HeaderButtonsSpacing = 4f;
 		private const float BrowseButtonWidth = 24f;
-		private const float SideColumnWidth = 160f;
-		private const int SectionPadding = 12;
+		private const float FoldoutWidth = 14f;
+		private const float DragHandleWidth = 16f;
+		private const float DropLineThickness = 2f;
+		private const float SeparatorThickness = 1f;
+		private const int SectionPadding = 8;
 		private const int SectionTitleFontSize = 14;
+		private const string BuildTimeFormat = "yyyy-MM-dd 'T' HH:mm:ss 'Z'";
 		private const int MinRecentBuildDays = 1;
 		private const int MaxRecentBuildDays = 365;
 		private const string LastBuildPrefKey = "Praenaris.UniBuilder.{0}.{1}.";	// Project and profile GUIDs, EditorPrefs are shared by every project
+		private const string ExpandedStateKey = "Praenaris.UniBuilder.{0}.Expanded";	// Profile GUID, kept for the Editor session
 
 		private static readonly Color IncludedTint = new(0.4f, 0.8f, 0.4f, 0.2f);
 		private static readonly Color ExcludedTint = new(0.5f, 0.5f, 0.5f, 0.1f);
 		private static readonly Color BuildAllColor = new(0.4f, 0.8f, 0.4f, 1f);
 		private static readonly Color RemoveDoNotsColor = new(1f, 0.6f, 0.2f, 1f);
+		private static readonly Color ZipAllBuildsColor = new(0.3f, 0.85f, 0.8f, 1f);
+		private static readonly Color PushToStoresColor = new(1f, 0.9f, 0.3f, 1f);
 		private static readonly Color SucceededColor = new(0.3f, 0.85f, 0.3f, 1f);
 		private static readonly Color FailedColor = new(0.95f, 0.3f, 0.3f, 1f);
+		private static readonly Color SeparatorColor = new(0.5f, 0.5f, 0.5f, 0.5f);
+		private static readonly Color DropLineColor = new(0.3f, 0.6f, 1f, 1f);
 		private static readonly GUIContent OpenBuildProfilesLabel = new("Open Build Profiles");
 		private static readonly GUIContent StopOnFailureLabel = new("Stop the pipeline when a build fails");
 		private static readonly GUIContent ConfirmDoNotsRemovalLabel = new("Ask before removing the DoNot folders");
 		private static readonly GUIContent RecentBuildDaysLabel = new("Recent build days");
 		private static readonly GUIContent BuildAllLabel = new("Build All");
 		private static readonly GUIContent RemoveDoNotsLabel = new("Remove DoNots");
-		private static readonly GUIContent MoveUpLabel = new("▲");
-		private static readonly GUIContent MoveDownLabel = new("▼");
-		private static readonly GUIContent SelectLabel = new("Select");
+		private static readonly GUIContent ZipAllBuildsLabel = new("Zip All Builds");
+		private static readonly GUIContent PushToStoresLabel = new("Push All to Stores");
+		private static readonly GUIContent OpenFolderLabel = new("Open folder");
 		private static readonly GUIContent BuildLabel = new("Build");
+		private static readonly GUIContent PushLabel = new("Push");
 		private static readonly GUIContent OutputPathLabel = new("Output path");
 		private static readonly GUIContent BrowseLabel = new("…");
 		private static GUIStyle _sectionStyle_internal = null;	// Caching only, use the property instead
@@ -57,10 +68,13 @@ namespace Praenaris.UniBuilder
 		private static GUIStyle _oldBuildTimeStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _succeededStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _failedStyle_internal = null;	// Caching only, use the property instead
+		private static GUIStyle _dragHandleStyle_internal = null;	// Caching only, use the property instead
 
 		private ProfileInfo[] _profiles = { };
 		private SerializedObject _serializedSettings_internal = null;	// Caching only, use the property instead
 		private Vector2 _scroll = Vector2.zero;
+		private readonly List<Rect> _sectionRects = new();	// By position, from the latest repaint
+		private int _draggedPosition = -1;	// None while not dragging
 
 
 		#region Events
@@ -90,17 +104,24 @@ namespace Praenaris.UniBuilder
 					int[] order = Enumerable.Range(0, _profiles.Length).OrderBy(profileIndex => entryIndices[profileIndex]).ToArray();	// The pipeline order is the entries' order
 					int moveFrom = -1;
 					int moveTo = -1;
+					while (_sectionRects.Count < order.Length)
+						_sectionRects.Add(Rect.zero);
 
 					DrawHeader(this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.StopPipelineOnFailure)), entryIndices.Count(entryIndex => entries.GetArrayElementAtIndex(entryIndex).FindPropertyRelative(nameof(UniBuildProfileEntry.Included)).boolValue));
 					_scroll = EditorGUILayout.BeginScrollView(_scroll);
 					{
 						for (int position = 0; position < order.Length; position++) {
 							int profileIndex = order[position];
-							int direction = DrawProfileSection(position, order.Length, _profiles[profileIndex], entries.GetArrayElementAtIndex(entryIndices[profileIndex]));
-							if (direction != 0) {
-								moveFrom = entryIndices[profileIndex];
-								moveTo = entryIndices[order[position + direction]];
-							}
+							Rect sectionRect = DrawProfileSection(position, _profiles[profileIndex], entries.GetArrayElementAtIndex(entryIndices[profileIndex]));
+							if (Event.current.type == EventType.Repaint)
+								_sectionRects[position] = sectionRect;
+						}
+
+						int dropPosition = HandleDragging(order.Length);
+						if (dropPosition >= 0) {
+							moveFrom = entryIndices[order[_draggedPosition]];
+							moveTo = entryIndices[order[dropPosition]];
+							_draggedPosition = -1;
 						}
 					}
 					EditorGUILayout.EndScrollView();
@@ -142,44 +163,148 @@ namespace Praenaris.UniBuilder
 					EditorApplication.ExecuteMenuItem(BuildProfilesMenuPath);
 
 				Color previousColor = UnityEngine.GUI.backgroundColor;
+				(Rect buildAllRect, Rect removeDoNotsRect) = GetHeaderButtonRects();
 				UnityEngine.GUI.backgroundColor = BuildAllColor;
 				EditorGUI.BeginDisabledGroup(includedCount == 0);
 				{
-					if (GUILayout.Button(BuildAllLabel, GUILayout.Height(BuildAllButtonHeight)))
+					if (UnityEngine.GUI.Button(buildAllRect, BuildAllLabel))
 						EditorApplication.delayCall += BuildAll;	// Outside the GUI pass, building takes a while
 				}
 				EditorGUI.EndDisabledGroup();
 				UnityEngine.GUI.backgroundColor = RemoveDoNotsColor;
-				if (GUILayout.Button(RemoveDoNotsLabel, GUILayout.Height(BuildAllButtonHeight)))
+				if (UnityEngine.GUI.Button(removeDoNotsRect, RemoveDoNotsLabel))
 					EditorApplication.delayCall += RemoveDoNots;	// Outside the GUI pass, it opens a dialog
+
+				(Rect zipAllRect, Rect pushAllRect) = GetHeaderButtonRects();
+				UnityEngine.GUI.backgroundColor = ZipAllBuildsColor;
+				UnityEngine.GUI.Button(zipAllRect, ZipAllBuildsLabel);	// TODO: Zip the builds
+				UnityEngine.GUI.backgroundColor = PushToStoresColor;
+				UnityEngine.GUI.Button(pushAllRect, PushToStoresLabel);	// TODO: Push the builds to the stores
 				UnityEngine.GUI.backgroundColor = previousColor;
-				EditorGUILayout.Space();
+
+				EditorGUILayout.Space(SectionPadding / 2f);
+				EditorGUI.DrawRect(EditorGUILayout.GetControlRect(false, SeparatorThickness), SeparatorColor);	// Between the header and the list
+				EditorGUILayout.Space(SectionPadding / 2f);
 			}
 
-			/// <summary>Returns -1 or 1 when moved earlier or later in the pipeline, 0 otherwise.</summary>
-			private static int DrawProfileSection(int position, int count, ProfileInfo profile, SerializedProperty entry)
+			/// <summary>Lays out a row of two equal columns, in whole pixels so the gaps match.</summary>
+			private static (Rect Left, Rect Right) GetHeaderButtonRects()
 			{
-				int direction = 0;
+				Rect rowRect = EditorGUILayout.GetControlRect(false, BuildAllButtonHeight);
+				float columnWidth = Mathf.Floor((rowRect.width - HeaderButtonsSpacing) / 2f);
+				Rect leftRect = new(rowRect.x, rowRect.y, columnWidth, rowRect.height);
+				Rect rightRect = Rect.MinMaxRect((leftRect.xMax + HeaderButtonsSpacing), rowRect.y, rowRect.xMax, rowRect.yMax);	// It takes the rounding leftover
+				return (leftRect, rightRect);
+			}
+
+			/// <summary>Returns its rect, only right while repainting.</summary>
+			private Rect DrawProfileSection(int position, ProfileInfo profile, SerializedProperty entry)
+			{
 				SerializedProperty included = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.Included));
 
-				Rect sectionRect = EditorGUILayout.BeginHorizontal(SectionStyle);
+				Rect sectionRect = EditorGUILayout.BeginVertical(SectionStyle);
 				{
 					if (Event.current.type == EventType.Repaint)
 						EditorGUI.DrawRect(sectionRect, (included.boolValue ? IncludedTint : ExcludedTint));
 
-					EditorGUILayout.BeginVertical();
+					string expandedStateKey = string.Format(ExpandedStateKey, profile.Guid);
+					bool isExpanded = SessionState.GetBool(expandedStateKey, false);	// Folded by default, so the list stays compact
+
+					EditorGUILayout.BeginHorizontal();
 					{
+						DrawDragHandle(position);
+						bool isExpanding = GUILayout.Toggle(isExpanded, GUIContent.none, EditorStyles.foldout, GUILayout.Width(FoldoutWidth));
+						if (isExpanding != isExpanded)
+							SessionState.SetBool(expandedStateKey, isExpanding);
+
 						bool isIncluded = EditorGUILayout.ToggleLeft($"{position + 1}. {profile.Profile.name}", included.boolValue, SectionTitleStyle);
 						if (isIncluded != included.boolValue)
 							included.boolValue = isIncluded;
-						EditorGUILayout.Space(SectionPadding / 2f);
 
-						EditorGUI.BeginDisabledGroup(!included.boolValue);
+						if (GUILayout.Button(OpenFolderLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+							OpenOutputFolder(entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue);
+
+						Color previousColor = UnityEngine.GUI.backgroundColor;
+						UnityEngine.GUI.backgroundColor = BuildAllColor;
+						if (GUILayout.Button(BuildLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
+							string outputPath = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue;
+							EditorApplication.delayCall += () => Build(profile, outputPath);	// Outside the GUI pass, building takes a while
+						}
+						UnityEngine.GUI.backgroundColor = PushToStoresColor;
+						GUILayout.Button(PushLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false));	// TODO: Push this build to its store
+						UnityEngine.GUI.backgroundColor = previousColor;
+					}
+					EditorGUILayout.EndHorizontal();
+					EditorGUILayout.Space(SectionPadding / 2f);
+					if (isExpanded)
+						DrawProfileBody(profile, entry, included.boolValue);
+				}
+				EditorGUILayout.EndVertical();
+				EditorGUILayout.Space(SectionPadding / 2f);
+				return sectionRect;
+			}
+
+			private void DrawDragHandle(int position)
+			{
+				Rect handleRect = GUILayoutUtility.GetRect(DragHandleWidth, EditorGUIUtility.singleLineHeight, GUILayout.ExpandWidth(false));
+				int controlId = GUIUtility.GetControlID(FocusType.Passive);
+				EditorGUIUtility.AddCursorRect(handleRect, MouseCursor.Pan);
+
+				Event current = Event.current;
+				if (current.GetTypeForControl(controlId) == EventType.Repaint)
+					DragHandleStyle.Draw(new Rect(handleRect.x, (handleRect.center.y - 3f), handleRect.width, 6f), false, false, false, false);	// The grip lines, like Unity's lists
+				else if ((current.GetTypeForControl(controlId) == EventType.MouseDown) && (current.button == 0) && handleRect.Contains(current.mousePosition)) {
+					GUIUtility.hotControl = controlId;
+					_draggedPosition = position;
+					current.Use();
+				}
+			}
+
+			/// <summary>Draws where the dragged section would drop, and returns that position when released there, -1 otherwise.</summary>
+			private int HandleDragging(int count)
+			{
+				if (_draggedPosition < 0) return -1;
+
+				Event current = Event.current;
+				List<int> others = Enumerable.Range(0, count).Where(position => (position != _draggedPosition)).ToList();
+				int slot = others.Count(position => (_sectionRects[position].center.y < current.mousePosition.y));	// Among the others, where it would end up
+
+				switch (current.rawType) {
+					case EventType.MouseDrag:
+						Repaint();
+						current.Use();
+						break;
+
+					case EventType.Repaint:
+						if (others.Count > 0) {
+							float lineY = ((slot < others.Count) ? (_sectionRects[others[slot]].yMin - (SectionPadding / 4f)) : (_sectionRects[others[^1]].yMax + (SectionPadding / 4f)));
+							EditorGUI.DrawRect(new Rect(_sectionRects[0].x, (lineY - (DropLineThickness / 2f)), _sectionRects[0].width, DropLineThickness), DropLineColor);
+						}
+						break;
+
+					case EventType.MouseUp:
+						GUIUtility.hotControl = 0;
+						current.Use();
+						if (slot != _draggedPosition)
+							return slot;	// Its final position, since the others keep their order
+						_draggedPosition = -1;
+						break;
+				}
+				return -1;
+			}
+
+			private static void DrawProfileBody(ProfileInfo profile, SerializedProperty entry, bool isIncluded)
+			{
+				EditorGUILayout.BeginHorizontal();
+				{
+					EditorGUILayout.BeginVertical();
+					{
+						EditorGUI.BeginDisabledGroup(!isIncluded);
 						{
 							EditorGUILayout.LabelField("Platform", profile.Platform);
 							EditorGUILayout.LabelField("Development", profile.Development);
 							EditorGUILayout.LabelField("Scenes", GetScenesSummary(profile.Profile));
-							EditorGUILayout.LabelField("Scripting defines", GetDefinesSummary(profile.Profile), EditorStyles.wordWrappedLabel);
+							DrawDefines(profile.Profile);
 							DrawOutputPathField(profile.Profile, entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)));
 						}
 						EditorGUI.EndDisabledGroup();
@@ -187,62 +312,50 @@ namespace Praenaris.UniBuilder
 					EditorGUILayout.EndVertical();
 					EditorGUILayout.Space(SectionPadding, false);
 
-					EditorGUILayout.BeginVertical(GUILayout.Width(SideColumnWidth));
-					{
-						EditorGUILayout.BeginHorizontal();
-						{
-							GUILayout.FlexibleSpace();
-							EditorGUI.BeginDisabledGroup(position == 0);
-							{
-								if (GUILayout.Button(MoveUpLabel, EditorStyles.miniButtonLeft, GUILayout.ExpandWidth(false)))
-									direction = -1;
-							}
-							EditorGUI.EndDisabledGroup();
-							EditorGUI.BeginDisabledGroup(position == (count - 1));
-							{
-								if (GUILayout.Button(MoveDownLabel, EditorStyles.miniButtonRight, GUILayout.ExpandWidth(false)))
-									direction = 1;
-							}
-							EditorGUI.EndDisabledGroup();
-							if (GUILayout.Button(SelectLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
-								Selection.activeObject = profile.Profile;
-								EditorGUIUtility.PingObject(profile.Profile);
-							}
-
-							Color previousColor = UnityEngine.GUI.backgroundColor;
-							UnityEngine.GUI.backgroundColor = BuildAllColor;
-							if (GUILayout.Button(BuildLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
-								string outputPath = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue;
-								EditorApplication.delayCall += () => Build(profile, outputPath);	// Outside the GUI pass, building takes a while
-							}
-							UnityEngine.GUI.backgroundColor = previousColor;
-						}
-						EditorGUILayout.EndHorizontal();
-						DrawLastBuild(profile, entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue);
-					}
-					EditorGUILayout.EndVertical();
+					DrawLastBuild(profile, entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue);
 				}
 				EditorGUILayout.EndHorizontal();
 				EditorGUILayout.Space(SectionPadding / 2f);
-				return direction;
+			}
+
+			private static void DrawDefines(BuildProfile profile)
+			{
+				string[] defines = profile.scriptingDefines;
+				if (defines.Length == 0)
+					EditorGUILayout.LabelField("Scripting defines", "None");
+				for (int defineIndex = 0; defineIndex < defines.Length; defineIndex++)
+					EditorGUILayout.LabelField(((defineIndex == 0) ? "Scripting defines" : " "), defines[defineIndex]);	// One per line, labelled once
 			}
 
 			private static void DrawLastBuild(ProfileInfo profile, int recentBuildDays)
 			{
+				List<(string Text, GUIStyle Style)> lines = GetLastBuildLines(profile, recentBuildDays);
+				float width = lines.Max(line => line.Style.CalcSize(new GUIContent(line.Text)).x);
+
+				EditorGUILayout.BeginVertical(GUILayout.Width(width));	// Exactly as wide as its widest line, its stretching labels would take half the row otherwise
+				{
+					foreach ((string text, GUIStyle style) in lines)
+						GUILayout.Label(text, style);
+				}
+				EditorGUILayout.EndVertical();
+			}
+
+			private static List<(string Text, GUIStyle Style)> GetLastBuildLines(ProfileInfo profile, int recentBuildDays)
+			{
 				string prefKey = GetLastBuildPrefKey(profile);
 				string lastBuildTime = EditorPrefs.GetString(prefKey + "Time", string.Empty);
-				if (string.IsNullOrEmpty(lastBuildTime)) {
-					GUILayout.Label("Never built", BuildTimeStyle);
-					return;
-				}
+				if (string.IsNullOrEmpty(lastBuildTime))
+					return new() { ("Never built", BuildTimeStyle) };
 
 				bool succeeded = EditorPrefs.GetBool(prefKey + "Succeeded", false);
 				string lastBuildVersion = EditorPrefs.GetString(prefKey + "Version", string.Empty);
-				GUILayout.Label(lastBuildVersion, ((lastBuildVersion == Application.version) ? SucceededStyle : FailedStyle));	// Green while it's still the current version
-				GUILayout.Label(lastBuildTime, (!DateTime.TryParse(lastBuildTime, out DateTime lastBuildDate)
-					? BuildTimeStyle
-					: (((DateTime.Now - lastBuildDate).TotalDays < recentBuildDays) ? RecentBuildTimeStyle : OldBuildTimeStyle)));
-				GUILayout.Label((succeeded ? "Success" : "Fail"), (succeeded ? SucceededStyle : FailedStyle));
+				return new() {
+					(lastBuildVersion, ((lastBuildVersion == Application.version) ? SucceededStyle : FailedStyle)),	// Green while it's still the current version
+					(DateTime.TryParse(lastBuildTime, out DateTime lastBuildDate)
+						? (lastBuildDate.ToString(BuildTimeFormat), (((DateTime.UtcNow - lastBuildDate).TotalDays < recentBuildDays) ? RecentBuildTimeStyle : OldBuildTimeStyle))
+						: (lastBuildTime, BuildTimeStyle)),
+					((succeeded ? "Success" : "Fail"), (succeeded ? SucceededStyle : FailedStyle)),
+				};
 			}
 
 			private static void DrawOutputPathField(BuildProfile profile, SerializedProperty outputPath)
@@ -262,11 +375,25 @@ namespace Praenaris.UniBuilder
 				EditorGUILayout.EndHorizontal();
 			}
 
+			/// <summary>Opens the output folder, or its closest existing parent if it isn't there yet.</summary>
+			private static void OpenOutputFolder(string outputPath)
+			{
+				string outputFolder = Path.GetFullPath(Path.Combine(ProjectFolder, outputPath));
+				string folder = outputFolder;
+				while ((folder != null) && !Directory.Exists(folder))
+					folder = Path.GetDirectoryName(folder);
+
+				if (folder == null) {
+					Log.Error($"Neither the output folder {outputFolder} nor any of its parents exist");
+					return;
+				}
+				if (folder != outputFolder)
+					Log.Warning($"The output folder {outputFolder} doesn't exist yet, opening {folder} instead");
+				EditorUtility.OpenWithDefaultApp(folder);
+			}
+
 			private static string GetScenesSummary(BuildProfile profile) =>
 				$"{profile.GetScenesForBuild().Count(scene => scene.enabled)} ({(profile.overrideGlobalScenes ? "own list" : "global list")})";
-
-			private static string GetDefinesSummary(BuildProfile profile) =>
-				(profile.scriptingDefines.Any() ? string.Join(", ", profile.scriptingDefines) : "None");
 
 		#endregion
 
@@ -395,7 +522,7 @@ namespace Praenaris.UniBuilder
 				if (!succeeded) return;	// Keeps the latest successful build's version and time
 
 				EditorPrefs.SetString(prefKey + "Version", PlayerSettings.bundleVersion);
-				EditorPrefs.SetString(prefKey + "Time", DateTime.Now.ToString("s"));	// ISO 8601
+				EditorPrefs.SetString(prefKey + "Time", DateTime.UtcNow.ToString("s"));	// ISO 8601, in UTC
 			}
 
 			private static string GetLastBuildPrefKey(ProfileInfo profile) => string.Format(LastBuildPrefKey, PlayerSettings.productGUID, profile.Guid);
@@ -457,6 +584,8 @@ namespace Praenaris.UniBuilder
 				alignment = TextAnchor.MiddleRight,
 				normal = { textColor = FailedColor },
 			});
+
+			private static GUIStyle DragHandleStyle => (_dragHandleStyle_internal ??= new GUIStyle("RL DragHandle"));
 
 			private static GUIStyle SectionTitleStyle => (_sectionTitleStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
 				fontSize = SectionTitleFontSize,

@@ -26,12 +26,17 @@ namespace Praenaris.UniBuilder
 		private const float BuildAllButtonHeight = 32f;
 		private const float HeaderButtonsSpacing = 4f;
 		private const float BrowseButtonWidth = 24f;
-		private const int SectionPadding = 12;
+		private const float FoldoutWidth = 14f;
+		private const float DragHandleWidth = 16f;
+		private const float DropLineThickness = 2f;
+		private const float SeparatorThickness = 1f;
+		private const int SectionPadding = 8;
 		private const int SectionTitleFontSize = 14;
 		private const string BuildTimeFormat = "yyyy-MM-dd 'T' HH:mm:ss 'Z'";
 		private const int MinRecentBuildDays = 1;
 		private const int MaxRecentBuildDays = 365;
 		private const string LastBuildPrefKey = "Praenaris.UniBuilder.{0}.{1}.";	// Project and profile GUIDs, EditorPrefs are shared by every project
+		private const string ExpandedStateKey = "Praenaris.UniBuilder.{0}.Expanded";	// Profile GUID, kept for the Editor session
 
 		private static readonly Color IncludedTint = new(0.4f, 0.8f, 0.4f, 0.2f);
 		private static readonly Color ExcludedTint = new(0.5f, 0.5f, 0.5f, 0.1f);
@@ -41,6 +46,8 @@ namespace Praenaris.UniBuilder
 		private static readonly Color PushToStoresColor = new(1f, 0.9f, 0.3f, 1f);
 		private static readonly Color SucceededColor = new(0.3f, 0.85f, 0.3f, 1f);
 		private static readonly Color FailedColor = new(0.95f, 0.3f, 0.3f, 1f);
+		private static readonly Color SeparatorColor = new(0.5f, 0.5f, 0.5f, 0.5f);
+		private static readonly Color DropLineColor = new(0.3f, 0.6f, 1f, 1f);
 		private static readonly GUIContent OpenBuildProfilesLabel = new("Open Build Profiles");
 		private static readonly GUIContent StopOnFailureLabel = new("Stop the pipeline when a build fails");
 		private static readonly GUIContent ConfirmDoNotsRemovalLabel = new("Ask before removing the DoNot folders");
@@ -49,9 +56,7 @@ namespace Praenaris.UniBuilder
 		private static readonly GUIContent RemoveDoNotsLabel = new("Remove DoNots");
 		private static readonly GUIContent ZipAllBuildsLabel = new("Zip All Builds");
 		private static readonly GUIContent PushToStoresLabel = new("Push All to Stores");
-		private static readonly GUIContent MoveUpLabel = new("▲");
-		private static readonly GUIContent MoveDownLabel = new("▼");
-		private static readonly GUIContent SelectLabel = new("Select profile");
+		private static readonly GUIContent OpenFolderLabel = new("Open folder");
 		private static readonly GUIContent BuildLabel = new("Build");
 		private static readonly GUIContent PushLabel = new("Push");
 		private static readonly GUIContent OutputPathLabel = new("Output path");
@@ -63,10 +68,13 @@ namespace Praenaris.UniBuilder
 		private static GUIStyle _oldBuildTimeStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _succeededStyle_internal = null;	// Caching only, use the property instead
 		private static GUIStyle _failedStyle_internal = null;	// Caching only, use the property instead
+		private static GUIStyle _dragHandleStyle_internal = null;	// Caching only, use the property instead
 
 		private ProfileInfo[] _profiles = { };
 		private SerializedObject _serializedSettings_internal = null;	// Caching only, use the property instead
 		private Vector2 _scroll = Vector2.zero;
+		private readonly List<Rect> _sectionRects = new();	// By position, from the latest repaint
+		private int _draggedPosition = -1;	// None while not dragging
 
 
 		#region Events
@@ -96,17 +104,24 @@ namespace Praenaris.UniBuilder
 					int[] order = Enumerable.Range(0, _profiles.Length).OrderBy(profileIndex => entryIndices[profileIndex]).ToArray();	// The pipeline order is the entries' order
 					int moveFrom = -1;
 					int moveTo = -1;
+					while (_sectionRects.Count < order.Length)
+						_sectionRects.Add(Rect.zero);
 
 					DrawHeader(this.SerializedSettings.FindProperty(nameof(UniBuilderSettings.StopPipelineOnFailure)), entryIndices.Count(entryIndex => entries.GetArrayElementAtIndex(entryIndex).FindPropertyRelative(nameof(UniBuildProfileEntry.Included)).boolValue));
 					_scroll = EditorGUILayout.BeginScrollView(_scroll);
 					{
 						for (int position = 0; position < order.Length; position++) {
 							int profileIndex = order[position];
-							int direction = DrawProfileSection(position, order.Length, _profiles[profileIndex], entries.GetArrayElementAtIndex(entryIndices[profileIndex]));
-							if (direction != 0) {
-								moveFrom = entryIndices[profileIndex];
-								moveTo = entryIndices[order[position + direction]];
-							}
+							Rect sectionRect = DrawProfileSection(position, _profiles[profileIndex], entries.GetArrayElementAtIndex(entryIndices[profileIndex]));
+							if (Event.current.type == EventType.Repaint)
+								_sectionRects[position] = sectionRect;
+						}
+
+						int dropPosition = HandleDragging(order.Length);
+						if (dropPosition >= 0) {
+							moveFrom = entryIndices[order[_draggedPosition]];
+							moveTo = entryIndices[order[dropPosition]];
+							_draggedPosition = -1;
 						}
 					}
 					EditorGUILayout.EndScrollView();
@@ -166,7 +181,10 @@ namespace Praenaris.UniBuilder
 				UnityEngine.GUI.backgroundColor = PushToStoresColor;
 				UnityEngine.GUI.Button(pushAllRect, PushToStoresLabel);	// TODO: Push the builds to the stores
 				UnityEngine.GUI.backgroundColor = previousColor;
-				EditorGUILayout.Space();
+
+				EditorGUILayout.Space(SectionPadding / 2f);
+				EditorGUI.DrawRect(EditorGUILayout.GetControlRect(false, SeparatorThickness), SeparatorColor);	// Between the header and the list
+				EditorGUILayout.Space(SectionPadding / 2f);
 			}
 
 			/// <summary>Lays out a row of two equal columns, in whole pixels so the gaps match.</summary>
@@ -179,10 +197,9 @@ namespace Praenaris.UniBuilder
 				return (leftRect, rightRect);
 			}
 
-			/// <summary>Returns -1 or 1 when moved earlier or later in the pipeline, 0 otherwise.</summary>
-			private static int DrawProfileSection(int position, int count, ProfileInfo profile, SerializedProperty entry)
+			/// <summary>Returns its rect, only right while repainting.</summary>
+			private Rect DrawProfileSection(int position, ProfileInfo profile, SerializedProperty entry)
 			{
-				int direction = 0;
 				SerializedProperty included = entry.FindPropertyRelative(nameof(UniBuildProfileEntry.Included));
 
 				Rect sectionRect = EditorGUILayout.BeginVertical(SectionStyle);
@@ -190,23 +207,22 @@ namespace Praenaris.UniBuilder
 					if (Event.current.type == EventType.Repaint)
 						EditorGUI.DrawRect(sectionRect, (included.boolValue ? IncludedTint : ExcludedTint));
 
-					EditorGUI.BeginDisabledGroup(position == 0);
-					{
-						if (GUILayout.Button(MoveUpLabel, EditorStyles.miniButton))
-							direction = -1;
-					}
-					EditorGUI.EndDisabledGroup();
+					string expandedStateKey = string.Format(ExpandedStateKey, profile.Guid);
+					bool isExpanded = SessionState.GetBool(expandedStateKey, false);	// Folded by default, so the list stays compact
 
 					EditorGUILayout.BeginHorizontal();
 					{
+						DrawDragHandle(position);
+						bool isExpanding = GUILayout.Toggle(isExpanded, GUIContent.none, EditorStyles.foldout, GUILayout.Width(FoldoutWidth));
+						if (isExpanding != isExpanded)
+							SessionState.SetBool(expandedStateKey, isExpanding);
+
 						bool isIncluded = EditorGUILayout.ToggleLeft($"{position + 1}. {profile.Profile.name}", included.boolValue, SectionTitleStyle);
 						if (isIncluded != included.boolValue)
 							included.boolValue = isIncluded;
 
-						if (GUILayout.Button(SelectLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false))) {
-							Selection.activeObject = profile.Profile;
-							EditorGUIUtility.PingObject(profile.Profile);
-						}
+						if (GUILayout.Button(OpenFolderLabel, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+							OpenOutputFolder(entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)).stringValue);
 
 						Color previousColor = UnityEngine.GUI.backgroundColor;
 						UnityEngine.GUI.backgroundColor = BuildAllColor;
@@ -220,39 +236,86 @@ namespace Praenaris.UniBuilder
 					}
 					EditorGUILayout.EndHorizontal();
 					EditorGUILayout.Space(SectionPadding / 2f);
-
-					EditorGUILayout.BeginHorizontal();
-					{
-						EditorGUILayout.BeginVertical();
-						{
-							EditorGUI.BeginDisabledGroup(!included.boolValue);
-							{
-								EditorGUILayout.LabelField("Platform", profile.Platform);
-								EditorGUILayout.LabelField("Development", profile.Development);
-								EditorGUILayout.LabelField("Scenes", GetScenesSummary(profile.Profile));
-								DrawDefines(profile.Profile);
-								DrawOutputPathField(profile.Profile, entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)));
-							}
-							EditorGUI.EndDisabledGroup();
-						}
-						EditorGUILayout.EndVertical();
-						EditorGUILayout.Space(SectionPadding, false);
-
-						DrawLastBuild(profile, entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue);
-					}
-					EditorGUILayout.EndHorizontal();
-					EditorGUILayout.Space(SectionPadding / 2f);
-
-					EditorGUI.BeginDisabledGroup(position == (count - 1));
-					{
-						if (GUILayout.Button(MoveDownLabel, EditorStyles.miniButton))
-							direction = 1;
-					}
-					EditorGUI.EndDisabledGroup();
+					if (isExpanded)
+						DrawProfileBody(profile, entry, included.boolValue);
 				}
 				EditorGUILayout.EndVertical();
 				EditorGUILayout.Space(SectionPadding / 2f);
-				return direction;
+				return sectionRect;
+			}
+
+			private void DrawDragHandle(int position)
+			{
+				Rect handleRect = GUILayoutUtility.GetRect(DragHandleWidth, EditorGUIUtility.singleLineHeight, GUILayout.ExpandWidth(false));
+				int controlId = GUIUtility.GetControlID(FocusType.Passive);
+				EditorGUIUtility.AddCursorRect(handleRect, MouseCursor.Pan);
+
+				Event current = Event.current;
+				if (current.GetTypeForControl(controlId) == EventType.Repaint)
+					DragHandleStyle.Draw(new Rect(handleRect.x, (handleRect.center.y - 3f), handleRect.width, 6f), false, false, false, false);	// The grip lines, like Unity's lists
+				else if ((current.GetTypeForControl(controlId) == EventType.MouseDown) && (current.button == 0) && handleRect.Contains(current.mousePosition)) {
+					GUIUtility.hotControl = controlId;
+					_draggedPosition = position;
+					current.Use();
+				}
+			}
+
+			/// <summary>Draws where the dragged section would drop, and returns that position when released there, -1 otherwise.</summary>
+			private int HandleDragging(int count)
+			{
+				if (_draggedPosition < 0) return -1;
+
+				Event current = Event.current;
+				List<int> others = Enumerable.Range(0, count).Where(position => (position != _draggedPosition)).ToList();
+				int slot = others.Count(position => (_sectionRects[position].center.y < current.mousePosition.y));	// Among the others, where it would end up
+
+				switch (current.rawType) {
+					case EventType.MouseDrag:
+						Repaint();
+						current.Use();
+						break;
+
+					case EventType.Repaint:
+						if (others.Count > 0) {
+							float lineY = ((slot < others.Count) ? (_sectionRects[others[slot]].yMin - (SectionPadding / 4f)) : (_sectionRects[others[^1]].yMax + (SectionPadding / 4f)));
+							EditorGUI.DrawRect(new Rect(_sectionRects[0].x, (lineY - (DropLineThickness / 2f)), _sectionRects[0].width, DropLineThickness), DropLineColor);
+						}
+						break;
+
+					case EventType.MouseUp:
+						GUIUtility.hotControl = 0;
+						current.Use();
+						if (slot != _draggedPosition)
+							return slot;	// Its final position, since the others keep their order
+						_draggedPosition = -1;
+						break;
+				}
+				return -1;
+			}
+
+			private static void DrawProfileBody(ProfileInfo profile, SerializedProperty entry, bool isIncluded)
+			{
+				EditorGUILayout.BeginHorizontal();
+				{
+					EditorGUILayout.BeginVertical();
+					{
+						EditorGUI.BeginDisabledGroup(!isIncluded);
+						{
+							EditorGUILayout.LabelField("Platform", profile.Platform);
+							EditorGUILayout.LabelField("Development", profile.Development);
+							EditorGUILayout.LabelField("Scenes", GetScenesSummary(profile.Profile));
+							DrawDefines(profile.Profile);
+							DrawOutputPathField(profile.Profile, entry.FindPropertyRelative(nameof(UniBuildProfileEntry.OutputPath)));
+						}
+						EditorGUI.EndDisabledGroup();
+					}
+					EditorGUILayout.EndVertical();
+					EditorGUILayout.Space(SectionPadding, false);
+
+					DrawLastBuild(profile, entry.serializedObject.FindProperty(nameof(UniBuilderSettings.RecentBuildDays)).intValue);
+				}
+				EditorGUILayout.EndHorizontal();
+				EditorGUILayout.Space(SectionPadding / 2f);
 			}
 
 			private static void DrawDefines(BuildProfile profile)
@@ -310,6 +373,23 @@ namespace Praenaris.UniBuilder
 					}
 				}
 				EditorGUILayout.EndHorizontal();
+			}
+
+			/// <summary>Opens the output folder, or its closest existing parent if it isn't there yet.</summary>
+			private static void OpenOutputFolder(string outputPath)
+			{
+				string outputFolder = Path.GetFullPath(Path.Combine(ProjectFolder, outputPath));
+				string folder = outputFolder;
+				while ((folder != null) && !Directory.Exists(folder))
+					folder = Path.GetDirectoryName(folder);
+
+				if (folder == null) {
+					Log.Error($"Neither the output folder {outputFolder} nor any of its parents exist");
+					return;
+				}
+				if (folder != outputFolder)
+					Log.Warning($"The output folder {outputFolder} doesn't exist yet, opening {folder} instead");
+				EditorUtility.OpenWithDefaultApp(folder);
 			}
 
 			private static string GetScenesSummary(BuildProfile profile) =>
@@ -504,6 +584,8 @@ namespace Praenaris.UniBuilder
 				alignment = TextAnchor.MiddleRight,
 				normal = { textColor = FailedColor },
 			});
+
+			private static GUIStyle DragHandleStyle => (_dragHandleStyle_internal ??= new GUIStyle("RL DragHandle"));
 
 			private static GUIStyle SectionTitleStyle => (_sectionTitleStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
 				fontSize = SectionTitleFontSize,

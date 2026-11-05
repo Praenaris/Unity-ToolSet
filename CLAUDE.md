@@ -14,12 +14,12 @@ Dependencies (`package.json`): DevKit, `dev.tabernero.simplejson` (namespace `Ta
 
 There is **one asmdef**, `Praenaris.ToolSet.asmdef` (`rootNamespace: Praenaris`, `autoReferenced`), at the repo root. There is **no Editor asmdef**: everything under `Editor/` compiles into the same runtime assembly, so **every Editor file is wrapped whole in `#if UNITY_EDITOR` … `#endif`** (before the usings, after the namespace). New editor code must do the same, or player builds break.
 
-`versionDefines` in the asmdef turn installed packages into defines: `SIMPLEJSON`, `UNITASK`, and `STEAMWORKS_INTEGRATION` (only when `com.rlabrecque.steamworks.net` is installed). Steamworks calls are always behind `#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)`, and the code must compile without it.
+`versionDefines` in the asmdef turn installed packages into defines: `SIMPLEJSON`, `UNITASK`, and `STEAMWORKS_INTEGRATION` (only when `com.rlabrecque.steamworks.net` is installed). Steamworks calls are always behind `#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)`, and the code must compile without it. The asmdef also references `Unity.InputSystem`; Input System code goes behind Unity's own `ENABLE_INPUT_SYSTEM`, so it compiles out when the project's active input handling doesn't include it.
 
 ```
 Runtime/
 ├── ASubsystem.cs          base of the static subsystems
-├── Cursorman/             cursor subsystem (scaffold)
+├── Cursorman/             cursor presets by ID, auto-hide, [Cursor] ID dropdown
 ├── Fileman/               async local file read/write + UnityWebRequest fetch (Praenaris.Tools)
 ├── Savedata/              JSON savedata in slots and resources (+ Legacy/)
 ├── Situations/            situations subsystem (scaffold)
@@ -66,7 +66,9 @@ Every subsystem is compiled out unless its define is on: `ENABLE_SAVEDATA`, `ENA
 
 **Localizer** (`DragonResonance.Localizer`, partial `Localizer` + `.Local` + `.Online`): loads string tables into a DevKit `HeaderedSheet<string>` (languages as columns, keys as rows) from `LocalizerSettings` sources; online sources are fetched first only in the Editor and development builds. `Localize(template)` replaces `{Key}`, joining `Key:1`, `Key:2`… lines for composite keys; the language is the first of system language + `LanguageFallbacks` present in the sheet; `OnLanguageChange` fires on `ChangeLanguage`.
 
-**Cursorman** (`Praenaris.Cursorman`), **Situations** (`Praenaris.Situations`): scaffolds only so far: an empty `ASubsystem` (`Startup()` at `AfterAssembliesLoaded`), an empty settings asset, its settings page and toggler. Grow them following the pattern above.
+**Cursorman** (`Praenaris.Cursorman`): cursor presets switched by string ID. `CursormanSettings` has the general configuration on top (`CursorMode`, `DefaultCursor` preset ID, empty for the system cursor, and the `PointerInput` `InputActionReference`, Input System only) and the `Presets` list below; each `CursorPreset` (`[Serializable]` class, one-line `CursorPresetDrawer`) has an `Id`, a `Sprite` (its hotspot comes from the sprite's pivot) and `AutoHide` + `AutoHideDelay` seconds. `Cursorman.Set(id)` is the entry point: it awaits the startup, looks the preset up in the settings the first time and caches it in a dictionary by ID (with an uncompressed RGBA32 copy of the sprite's rect, so the sprite's texture needs Read/Write), logs an error and keeps the current cursor on an unknown ID, and on `null`/empty resets to `DefaultCursor` (`Reset()` is the same). The default is applied in `onStarting`, so `Set()` calls waiting on the startup land after it. An auto-hiding preset runs a UniTask loop that hides the cursor after the delay without `PointerInput` performing and shows it on movement; switching preset stops it and restores the visibility it took; without `PointerInput` it only warns and never hides. `[Cursor]` (`CursorAttribute` + `Editor/Drawers/CursorAttributeDrawer.cs`) draws a string as a dropdown of the preset IDs ("None" = empty), keeping an unknown ID visible as "(Missing)". DevKit has an unrelated `Praenaris.GUI.Cursorman` MonoBehaviour; they only clash if a file imports both namespaces.
+
+**Situations** (`Praenaris.Situations`): scaffold only so far: an empty `ASubsystem` (`Startup()` at `AfterAssembliesLoaded`), an empty settings asset, its settings page and toggler. Grow it following the pattern above.
 
 **UniBuilder** (`Praenaris.UniBuilder`, `Runtime/UniBuilder/`; always capitalized **UniBuilder**, never `Unibuilder`): a larger tool under active development, starting from the same scaffold (`UniBuilder` subsystem, `UniBuilderSettings`, `Project/Praenaris/UniBuilder` page, `Subsystems/UniBuilder` toggler). Keep this entry updated as its design settles.
 

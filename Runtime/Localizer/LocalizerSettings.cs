@@ -2,6 +2,7 @@
 
 
 using DragonResonance.Behaviours;
+using Praenaris.Serializables;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace DragonResonance.Localizer
 	[CreateAssetMenu(menuName = "Praenaris/Settings/Localizer", fileName = "New Localizer Settings")]
 	public class LocalizerSettings : SingletonScriptableObject<LocalizerSettings>
 	{
+		public SerializableKeyValuePair<string, string>[] BlacklistFilters = { };
 		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
 		public SResourceSource[] ResourceSources = { };
 		public SStreamingSource[] StreamingSources = { };

@@ -1,15 +1,17 @@
-#if ENABLE_UNIBUILD
+#if ENABLE_UNIBUILDER
 
 
-using DragonResonance.Behaviours;
-using UnityEngine;
+using System;
 
 
-namespace Praenaris.Unibuild
+namespace Praenaris.UniBuilder
 {
-	[CreateAssetMenu(menuName = "Praenaris/Settings/Unibuild", fileName = "New Unibuild Settings")]
-	public class UnibuildSettings : SingletonScriptableObject<UnibuildSettings>
+	[Serializable]
+	public struct UniBuildProfileEntry
 	{
+		public string ProfileGuid;
+		public bool Included;
+		public string OutputPath;
 	}
 }
 

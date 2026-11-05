@@ -1,32 +1,48 @@
 #if UNITY_EDITOR
 
 
+using DragonResonance.Editor.Building;
 using UnityEditor;
 
+#if ENABLE_SITUATIONS
+using Praenaris.Situations;
+#endif
 
-namespace DragonResonance.Editor.Building
+
+namespace DragonResonance.Editor.Settings
 {
-	[InitializeOnLoad]
-	public static class SituationManagerSystemToggler
+#if ENABLE_SITUATIONS
+	public class SituationsSettingsProvider : AScriptableSettingsProvider<SituationsSettings>
+#else
+	public class SituationsSettingsProvider : AScriptableSettingsProvider
+#endif
 	{
-		private const string SUBSYSTEM_DEFINE = "_ENABLE_SITUATIONMANAGER";
+		private const string SettingsPath = "Project/Praenaris/Situations";
+		private const string BuildDefinition = "ENABLE_SITUATIONS";
 
 
 		#region Constructors
 
-			static SituationManagerSystemToggler() => BuildDefines.SetDefinition(SUBSYSTEM_DEFINE, false);
+			[SettingsProvider]
+			public static SettingsProvider Create() => new SituationsSettingsProvider(SettingsPath, SettingsScope.Project);
+
+			public SituationsSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
 
 		#endregion
 
 
-		#region Publics
+		#region Inheritables
 
-			#if ENABLE_SITUATIONMANAGER
-				[MenuItem("Subsystems/SituationManager [ON]/Disable SituationManager")]
-			#else
-				[MenuItem("Subsystems/SituationManager [OFF]/Enable SituationManager")]
-			#endif
-			public static void SwitchSubsystem() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
+			protected override void OnBeforeGUI(string searchContext)
+			{
+				#if ENABLE_SITUATIONS
+					if (!EditorGUILayout.Toggle("Enabled", true))
+						BuildDefines.SetDefinitionState(BuildDefinition, false);
+				#else
+					if (EditorGUILayout.Toggle("Enabled", false))
+						BuildDefines.SetDefinitionState(BuildDefinition, true);
+				#endif
+			}
 
 		#endregion
 	}

@@ -14,7 +14,7 @@ namespace Praenaris.Integration
 	{
 		public string Name;
 
-		#if STEAMWORKS_INTEGRATION
+		#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 		public string SteamworksAchievementId;
 		public string SteamworksStatId;
 		#endif
@@ -34,7 +34,7 @@ namespace Praenaris.Integration
 
 			public void Progress(int value, bool applyImmediately = true)
 			{
-				#if STEAMWORKS_INTEGRATION
+				#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 					int minValue = (int)Math.Min(this.StartingValue, this.TargetValue);
 					int maxValue = (int)Math.Max(this.StartingValue, this.TargetValue);
 					Steamworks.SteamUserStats.SetStat(this.SteamworksStatId, value.Clamp(minValue, maxValue));	// Steam rejects values out of the stat range
@@ -46,7 +46,7 @@ namespace Praenaris.Integration
 
 			public void Achieve(bool applyImmediately = true)
 			{
-				#if STEAMWORKS_INTEGRATION
+				#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 					if (this.IsProgressionStat)
 						Progress(this.TargetValue, false);
 					Steamworks.SteamUserStats.SetAchievement(this.SteamworksAchievementId);
@@ -57,7 +57,7 @@ namespace Praenaris.Integration
 
 			public void Unachieve(bool applyImmediately = true)
 			{
-				#if STEAMWORKS_INTEGRATION
+				#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 					if (this.IsProgressionStat)
 						Progress(this.StartingValue, false);
 					Steamworks.SteamUserStats.ClearAchievement(this.SteamworksAchievementId);
@@ -75,7 +75,7 @@ namespace Praenaris.Integration
 			public float NormalizedProgress
 			{
 				get {
-					#if STEAMWORKS_INTEGRATION
+					#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 						if (this.IsProgressionStat)
 							return Steamworks.SteamUserStats.GetStat(this.SteamworksStatId, out float value) ? Mathf.InverseLerp(this.StartingValue, this.TargetValue, value) : 0f;
 						return (Steamworks.SteamUserStats.GetAchievement(this.SteamworksAchievementId, out bool achieved) && achieved) ? 1f : 0f;
@@ -87,7 +87,7 @@ namespace Praenaris.Integration
 
 			public override string ToString()
 			{
-				#if STEAMWORKS_INTEGRATION
+				#if (STEAMWORKS_INTEGRATION && !DISABLESTEAMWORKS)
 					string achievementState = Steamworks.SteamUserStats.GetAchievement(this.SteamworksAchievementId, out bool isAchieved) ? (isAchieved ? "ACHIEVED" : "UNACHIEVED") : "UNKNOWN";
 					string status = $"Achievement {this.Name} ({this.SteamworksAchievementId}): [{achievementState}]";
 					if (!this.IsProgressionStat) return status;

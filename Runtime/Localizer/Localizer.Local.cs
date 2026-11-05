@@ -20,6 +20,8 @@ namespace DragonResonance.Localizer
 				foreach (SStreamingSource source in _settings.StreamingSources)
 					_dataSheet.JoinTSV(await File.ReadAllTextAsync(
 						Path.Join(Application.streamingAssetsPath, source.FilePath)));
+
+				ApplyBlacklistFilters();	// Once everything is merged and sanitized
 			}
 
 		#endregion

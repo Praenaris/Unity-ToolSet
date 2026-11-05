@@ -1,50 +1,27 @@
-#if UNITY_EDITOR
+#if ENABLE_UNIBUILDER
 
 
-using DragonResonance.Editor.Building;
-using UnityEditor;
-
-#if ENABLE_SITUATIONMANAGER
-using Praenaris.SituationManager;
-#endif
+using DragonResonance.Behaviours;
+using UnityEngine;
 
 
-namespace DragonResonance.Editor.Settings
+namespace Praenaris.UniBuilder
 {
-#if ENABLE_SITUATIONMANAGER
-	public class SituationManagerSettingsProvider : AScriptableSettingsProvider<SituationManagerSettings>
-#else
-	public class SituationManagerSettingsProvider : AScriptableSettingsProvider
-#endif
+	[CreateAssetMenu(menuName = "Praenaris/Settings/UniBuilder", fileName = "New UniBuilder Settings")]
+	public class UniBuilderSettings : SingletonScriptableObject<UniBuilderSettings>
 	{
-		private const string SettingsPath = "Project/Praenaris/SituationManager";
-		private const string BuildDefinition = "ENABLE_SITUATIONMANAGER";
+		public string SteamTest1 = "";
+		public int SteamTest2 = 0;
+		public bool SteamTest3 = false;
 
+		public string ItchIoTest1 = "";
+		public int ItchIoTest2 = 0;
+		public bool ItchIoTest3 = false;
 
-		#region Constructors
-
-			[SettingsProvider]
-			public static SettingsProvider Create() => new SituationManagerSettingsProvider(SettingsPath, SettingsScope.Project);
-
-			public SituationManagerSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
-
-		#endregion
-
-
-		#region Inheritables
-
-			protected override void OnBeforeGUI(string searchContext)
-			{
-				#if ENABLE_SITUATIONMANAGER
-					if (!EditorGUILayout.Toggle("Enabled", true))
-						BuildDefines.SetDefinitionState(BuildDefinition, false);
-				#else
-					if (EditorGUILayout.Toggle("Enabled", false))
-						BuildDefines.SetDefinitionState(BuildDefinition, true);
-				#endif
-			}
-
-		#endregion
+		public UniBuildProfileEntry[] BuildProfiles = { };
+		public bool StopPipelineOnFailure = true;
+		public bool ConfirmDoNotsRemoval = true;
+		public int RecentBuildDays = 30;
 	}
 }
 

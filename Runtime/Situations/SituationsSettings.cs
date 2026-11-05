@@ -1,22 +1,15 @@
-#if ENABLE_UNIBUILD
+#if ENABLE_SITUATIONS
 
 
-using Praenaris;
-using UnityEngine.Scripting;
+using DragonResonance.Behaviours;
 using UnityEngine;
 
 
-namespace Praenaris.Unibuild
+namespace Praenaris.Situations
 {
-	[Preserve]
-	public class Unibuild : ASubsystem<Unibuild, UnibuildSettings>
+	[CreateAssetMenu(menuName = "Praenaris/Settings/Situations", fileName = "New Situations Settings")]
+	public class SituationsSettings : SingletonScriptableObject<SituationsSettings>
 	{
-		#region Events
-
-			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-			private static void Initialize() => Startup();
-
-		#endregion
 	}
 }
 

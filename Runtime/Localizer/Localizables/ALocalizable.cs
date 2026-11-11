@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace DragonResonance.Localizer
 {
-	public class Localizable : PossumBehaviour
+	public abstract class ALocalizable : PossumBehaviour
 	{
 		//
 	}

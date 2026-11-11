@@ -32,7 +32,8 @@ Editor/
 ├── Building/              Subsystems/ menu togglers (one per subsystem) + Steamworks disabler
 ├── Drawers/               property drawers / custom editors for the subsystem data
 ├── Settings/              Project Settings providers under Project/Praenaris/…
-└── Sounder/               SAudioSourceConfig drawer
+├── Sounder/               SAudioSourceConfig drawer
+└── Toolbars/              Unity 6.3 main toolbar elements (MainToolbarElement): time scale slider + reset (Play Mode only), Project Settings button
 Resources/[SteamManager].prefab
 ```
 

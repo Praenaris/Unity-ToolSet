@@ -18,9 +18,15 @@ namespace DragonResonance.Localizer
 
 		public string Path => this.Type switch {
 		#if UNITY_EDITOR
-			LocalizationDataType.TextAsset => UnityEditor.AssetDatabase.GetAssetPath(_asset),
+			LocalizationDataType.TextAsset => UnityEditor.AssetDatabase.GetAssetPath(_asset),	// There is no path outside the Editor
 		#endif
 			LocalizationDataType.StreamingAsset => System.IO.Path.Join(Application.streamingAssetsPath, _path),
+			_ => null
+		};
+
+		public string Content => this.Type switch {
+			LocalizationDataType.TextAsset => _asset.text,
+			LocalizationDataType.StreamingAsset => System.IO.File.ReadAllText(this.Path),
 			_ => null
 		};
 	}

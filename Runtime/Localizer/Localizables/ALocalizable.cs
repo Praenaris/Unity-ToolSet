@@ -1,17 +1,45 @@
 #if ENABLE_LOCALIZER
 
 
-using System;
+using DragonResonance.Behaviours;
 using UnityEngine;
 
 
 namespace DragonResonance.Localizer
 {
-	[Serializable]
-	public struct SResourceSource
+	public abstract class ALocalizable : PossumBehaviour
 	{
-		public TextAsset FileAsset;
-		public string Url;
+		[SerializeField] protected string _localizationTemplate = "This is a {TEST}";
+
+
+		#region Events
+
+			protected virtual void OnEnable() => Localizer.Subscribe(Localize);
+			protected virtual void OnDisable() => Localizer.Unsubscribe(Localize);
+
+		#endregion
+
+
+		#region Publics
+
+			[ContextMenu(nameof(Localize))]
+			public virtual void Localize() => Localizer.Localize(_localizationTemplate, OnLocalized);
+
+		#endregion
+
+
+		#region Inheritables
+
+			protected abstract void OnLocalized(string localizedText);
+
+		#endregion
+
+
+		#region Privates
+
+			//private void Localization() => OnLocalized(Localizer.Localize(_localizationTemplate));
+
+		#endregion
 	}
 }
 

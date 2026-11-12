@@ -1,18 +1,18 @@
 #if ENABLE_LOCALIZER
 
 
-using Cysharp.Threading.Tasks;
 using DragonResonance.Databases;
 using DragonResonance.Extensions;
 using DragonResonance.Logging;
+using Praenaris.Tools;
 using Praenaris;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Threading.Tasks;
 using System;
-using UnityEngine.Events;
 using UnityEngine.Scripting;
 using UnityEngine;
 
@@ -35,11 +35,13 @@ namespace DragonResonance.Localizer
 
 			private static async Task Start()
 			{
-				#if ENABLE_UNITYWEBREQUEST && (UNITY_EDITOR || DEVELOPMENT_BUILD)
+				await LoadLocalData();
+				#if ((UNITY_EDITOR || DEVELOPMENT_BUILD) && ENABLE_UNITYWEBREQUEST)
 					await RetrieveOnlineData();
 				#endif
-				await LoadLocalData();
-				_currentLanguage = FirstPreferredLanguage(_currentLanguage);
+				if (_currentLanguage == SystemLanguage.Unknown)	// Unless it was changed while starting
+					_currentLanguage = FirstPreferredLanguage(_currentLanguage);
+				OnLanguageChange?.Invoke();
 			}
 
 		#endregion
@@ -47,25 +49,36 @@ namespace DragonResonance.Localizer
 
 		#region Publics
 
-			public static async UniTask ChangeLanguage(SystemLanguage language)
+			public static void ChangeLanguage(SystemLanguage language)
 			{
-				await _starting.Task;
 				Log.Emphasis($"Language changed to {language}");
 				_currentLanguage = language;
+				if (!_starting.Task.IsCompleted) return;	// Otherwise it runs against empty data
 				OnLanguageChange?.Invoke();
 			}
 
-
-			public static async UniTask Localize(string template, UnityEvent<string> handler)
+			public static void Subscribe(Action handler, bool refreshLocalization = false)
 			{
-				await _starting.Task;
-				handler.Invoke(await Localize(template));
+				OnLanguageChange += handler;
+				if (!_starting.Task.IsCompleted) return;	// Otherwise it runs against empty data
+				if (refreshLocalization)
+					OnLanguageChange?.Invoke();
+				else
+					handler.Invoke();
 			}
 
-			public static async UniTask<string> Localize(string template)
+			public static void Unsubscribe(Action handler, bool refreshLocalization = false)
 			{
-				await _starting.Task;
+				OnLanguageChange -= handler;
+				if (!_starting.Task.IsCompleted) return;	// Otherwise it runs against empty data
+				if (refreshLocalization)
+					OnLanguageChange?.Invoke();
+			}
 
+
+			public static void Localize(string template, Action<string> handler) => handler.Invoke(Localize(template));
+			public static string Localize(string template)
+			{
 				string language = _currentLanguage.ToString();
 				foreach (string key in GetKeys(template)) {
 
@@ -99,12 +112,48 @@ namespace DragonResonance.Localizer
 
 		#region Privates
 
+			private static IEnumerable<string> GetKeys(string rawText) =>
+				Regex.Matches(rawText, @"\{(\w+)\}").Select(match => match.Groups[1].Value);
+
 			private static SystemLanguage FirstPreferredLanguage(SystemLanguage fallback)
 			{
 				SystemLanguage[] preferredLanguages = _settings.PreferredLanguages.ToArray();
 				SystemLanguage[] availableLanguages = Localizer.AvailableLanguages.ToArray();
 				return preferredLanguages.FirstMatchOrFallback(availableLanguages, fallback);
 			}
+
+
+			private static async Task LoadLocalData()
+			{
+				foreach (LocalizationDataSource source in _settings.LocalizationDataSources) {
+					switch (source.Type) {
+						case LocalizationDataType.TextAsset:
+							_dataSheet.JoinTSV(source.Content);
+							break;
+
+						case LocalizationDataType.StreamingAsset:
+							_dataSheet.JoinTSV(await File.ReadAllTextAsync(source.Path));
+							break;
+
+						default:
+							Debug.LogError($"Type {source.Type} undefined");
+							break;
+					}
+				}
+
+				ApplyBlacklistFilters();	// Once everything is merged and sanitized
+			}
+
+			private static async Task RetrieveOnlineData()
+			{
+				foreach (LocalizationDataSource source in _settings.LocalizationDataSources.Where(dataSource => !string.IsNullOrEmpty(dataSource.Path)))	// Text assets only have a path in the Editor
+					await Fileman.FetchToFile(source.Url, source.Path);
+
+				#if UNITY_EDITOR
+				UnityEditor.AssetDatabase.Refresh();
+				#endif
+			}
+
 
 			private static void ApplyBlacklistFilters()
 			{
@@ -131,9 +180,6 @@ namespace DragonResonance.Localizer
 					}
 				}
 			}
-
-			private static IEnumerable<string> GetKeys(string rawText) =>
-				Regex.Matches(rawText, @"\{(\w+)\}").Select(match => match.Groups[1].Value);
 
 		#endregion
 

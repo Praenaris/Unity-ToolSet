@@ -1,18 +1,30 @@
 #if ENABLE_LOCALIZER
 
 
-using Cysharp.Threading.Tasks;
-using DragonResonance.Behaviours;
-using System.Text.RegularExpressions;
-using UnityEngine.Events;
-using UnityEngine;
-
-
 namespace DragonResonance.Localizer
 {
-	public class Localizable : PossumBehaviour
+	public class LocalizableText : ALocalizable
 	{
-		//
+		#if TEXTMESHPRO
+		public TMPro.TMP_Text[] _targets = { };
+		#else
+		public UnityEngine.UI.Text[] _targets = { };
+		#endif
+
+
+		#region Inheritables
+
+			protected override void OnLocalized(string localizedText)
+			{
+				#if TEXTMESHPRO
+				foreach (TMPro.TMP_Text target in _targets)
+				#else
+				foreach (UnityEngine.UI.Text target in _targets)
+				#endif
+					target.text = localizedText;
+			}
+
+		#endregion
 	}
 }
 

@@ -15,8 +15,6 @@ namespace DragonResonance.Localizer
 	{
 		public SerializableKeyValuePair<string, string>[] BlacklistFilters = { };
 		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
-		public SResourceSource[] ResourceSources = { };
-		public SStreamingSource[] StreamingSources = { };
 		public LocalizationDataSource[] LocalizationDataSources = { };
 
 		public SystemLanguage SystemLanguage => Application.systemLanguage;

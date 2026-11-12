@@ -1,16 +1,21 @@
 #if ENABLE_LOCALIZER
 
 
-using System;
+using UnityEngine.Events;
 
 
 namespace DragonResonance.Localizer
 {
-	[Serializable]
-	public struct SStreamingSource
+	public class LocalizableEvent : ALocalizable
 	{
-		public string FilePath;
-		public string Url;
+		public UnityEvent<string> Target = null;
+
+
+		#region Inheritables
+
+			protected override void OnLocalized(string localizedText) => this.Target?.Invoke(localizedText);
+
+		#endregion
 	}
 }
 

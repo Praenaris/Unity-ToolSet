@@ -1,31 +1,54 @@
 #if ENABLE_LOCALIZER
 
 
-using Cysharp.Threading.Tasks;
-using System.IO;
+using DragonResonance.Attributes;
+using DragonResonance.Localizer;
 using UnityEngine;
 
 
-namespace DragonResonance.Localizer
+public class LegacyBuildLocalizableEndpoint : LegacyLocalizableEndpoint
 {
-	public partial class Localizer	// Local
-	{
-		#region Publics
+	[SerializeField] private bool _enableEditorTemplate = false;
+	[ShowIf(nameof(_enableEditorTemplate))] [SerializeField] protected string _localizationEditorTemplate = "This is a editor {TEST}";
 
-			public static async UniTask LoadLocalData()
-			{
-				foreach (SResourceSource source in _settings.ResourceSources)
-					_dataSheet.JoinTSV(source.FileAsset.text);
+	[SerializeField] private bool _enableDevelopmentTemplate = false;
+	[ShowIf(nameof(_enableDevelopmentTemplate))] [SerializeField] protected string _localizationDevelopmentTemplate = "This is a development {TEST}";
 
-				foreach (SStreamingSource source in _settings.StreamingSources)
-					_dataSheet.JoinTSV(await File.ReadAllTextAsync(
-						Path.Join(Application.streamingAssetsPath, source.FilePath)));
+	[SerializeField] private bool _enableDemoTemplate = false;
+	[ShowIf(nameof(_enableDemoTemplate))] [SerializeField] protected string _localizationDemoTemplate = "This is a demo {TEST}";
 
-				ApplyBlacklistFilters();	// Once everything is merged and sanitized
-			}
 
-		#endregion
-	}
+	#if UNITY_EDITOR
+
+		public override void Localize()
+		{
+			if (_enableEditorTemplate)
+				Localizer.Localize(_localizationEditorTemplate, OnLocalize.Invoke);
+			else
+				base.Localize();
+		}
+
+	#elif DEVELOPMENT_BUILD
+
+		public override void Localize()
+		{
+			if (_enableDevelopmentTemplate)
+				Localizer.Localize(_localizationDevelopmentTemplate, OnLocalize.Invoke);
+			else
+				base.Localize();
+		}
+
+	#elif DEMO_BUILD
+
+		public override void Localize()
+		{
+			if (_enableDemoTemplate)
+				Localizer.Localize(_localizationDemoTemplate, OnLocalize.Invoke);
+			else
+				base.Localize();
+		}
+
+	#endif
 }
 
 

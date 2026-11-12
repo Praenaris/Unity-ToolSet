@@ -2,11 +2,12 @@
     "name": "Praenaris.ToolSet",
     "rootNamespace": "Praenaris",
     "references": [
-        "com.rlabrecque.steamworks.net",
         "Praenaris.DevKit",
         "Tabernero.SimpleJSON",
         "UniTask",
-        "UniTask.Linq"
+        "UniTask.Linq",
+        "Unity.TextMeshPro",
+        "com.rlabrecque.steamworks.net"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -20,6 +21,11 @@
             "name": "dev.tabernero.simplejson",
             "expression": "",
             "define": "SIMPLEJSON"
+        },
+        {
+            "name": "com.unity.ugui",
+            "expression": "",
+            "define": "TEXTMESHPRO"
         },
         {
             "name": "com.cysharp.unitask",

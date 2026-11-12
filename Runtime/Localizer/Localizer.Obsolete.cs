@@ -2,54 +2,32 @@
 
 
 using Cysharp.Threading.Tasks;
-using DragonResonance.Attributes;
-using DragonResonance.Localizer;
-using UnityEngine;
+using System;
+using UnityEngine.Events;
 
 
-public class BuildLocalizableEndpoint : LegacyLocalizableEndpoint
+namespace DragonResonance.Localizer
 {
-	[SerializeField] private bool _enableEditorTemplate = false;
-	[ShowIf(nameof(_enableEditorTemplate))] [SerializeField] protected string _localizationEditorTemplate = "This is a editor {TEST}";
+	public partial class Localizer	// Obsolete
+	{
+		#region Publics
 
-	[SerializeField] private bool _enableDevelopmentTemplate = false;
-	[ShowIf(nameof(_enableDevelopmentTemplate))] [SerializeField] protected string _localizationDevelopmentTemplate = "This is a development {TEST}";
+			[Obsolete]
+			public static async UniTask LocalizeLegacy(string template, UnityEvent<string> handler)
+			{
+				await _starting.Task;
+				handler.Invoke(Localize(template));
+			}
 
-	[SerializeField] private bool _enableDemoTemplate = false;
-	[ShowIf(nameof(_enableDemoTemplate))] [SerializeField] protected string _localizationDemoTemplate = "This is a demo {TEST}";
+			[Obsolete]
+			public static async UniTask<string> LocalizeLegacy(string template)
+			{
+				await _starting.Task;
+				return Localize(template);
+			}
 
-
-	#if UNITY_EDITOR
-
-		public override void Localize()
-		{
-			if (_enableEditorTemplate)
-				Localizer.Localize(_localizationEditorTemplate, OnLocalize).Forget();
-			else
-				base.Localize();
-		}
-
-	#elif DEVELOPMENT_BUILD
-
-		public override void Localize()
-		{
-			if (_enableDevelopmentTemplate)
-				Localizer.Localize(_localizationDevelopmentTemplate, OnLocalize).Forget();
-			else
-				base.Localize();
-		}
-
-	#elif DEMO_BUILD
-
-		public override void Localize()
-		{
-			if (_enableDemoTemplate)
-				Localizer.Localize(_localizationDemoTemplate, OnLocalize).Forget();
-			else
-				base.Localize();
-		}
-
-	#endif
+		#endregion
+	}
 }
 
 

@@ -51,7 +51,7 @@ namespace DragonResonance.Localizer
 		#region Publics
 
 			[ContextMenu(nameof(Localize))]
-			public virtual void Localize() => Localizer.Localize(_localizationTemplate, OnLocalize).Forget();
+			public virtual void Localize() => Localizer.LocalizeLegacy(_localizationTemplate, OnLocalize).Forget();
 
 		#endregion
 	}

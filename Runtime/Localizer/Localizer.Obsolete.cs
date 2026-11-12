@@ -1,16 +1,40 @@
 #if ENABLE_LOCALIZER
 
 
+using Cysharp.Threading.Tasks;
 using System;
+using UnityEngine.Events;
+using UnityEngine;
 
 
 namespace DragonResonance.Localizer
 {
-	[Serializable]
-	public struct SStreamingSource
+	public partial class Localizer	// Obsolete
 	{
-		public string FilePath;
-		public string Url;
+		#region Publics
+
+			[Obsolete]
+			public static async UniTask ChangeLanguageLegacy(SystemLanguage language)
+			{
+				await _starting.Task;
+				ChangeLanguage(language);
+			}
+
+			[Obsolete]
+			public static async UniTask LocalizeLegacy(string template, UnityEvent<string> handler)
+			{
+				await _starting.Task;
+				handler.Invoke(Localize(template));
+			}
+
+			[Obsolete]
+			public static async UniTask<string> LocalizeLegacy(string template)
+			{
+				await _starting.Task;
+				return Localize(template);
+			}
+
+		#endregion
 	}
 }
 

@@ -12,7 +12,37 @@ namespace DragonResonance.Localizer
 {
 	public abstract class ALocalizable : PossumBehaviour
 	{
-		//
+		[SerializeField] protected string _localizationTemplate = "This is a {TEST}";
+
+
+		#region Events
+
+			protected virtual void Awake() => Localizer.Subscribe(Localize);
+			protected virtual void OnDestroy() => Localizer.Unsubscribe(Localize);
+
+		#endregion
+
+
+		#region Publics
+
+			[ContextMenu(nameof(Localize))]
+			public virtual void Localize() => Localizer.Localize(_localizationTemplate, OnLocalized);
+
+		#endregion
+
+
+		#region Inheritables
+
+			protected abstract void OnLocalized(string localizedText);
+
+		#endregion
+
+
+		#region Privates
+
+			//private void Localization() => OnLocalized(Localizer.Localize(_localizationTemplate));
+
+		#endregion
 	}
 }
 

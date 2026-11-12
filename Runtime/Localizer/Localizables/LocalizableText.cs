@@ -1,14 +1,30 @@
-#if (ENABLE_LOCALIZER && TEXTMESHPRO)
-
-
-using TMPro;
+#if ENABLE_LOCALIZER
 
 
 namespace DragonResonance.Localizer
 {
 	public class LocalizableText : ALocalizable
 	{
-		public TMP_Text[] _targets = { };
+		#if TEXTMESHPRO
+		public TMPro.TMP_Text[] _targets = { };
+		#else
+		public UnityEngine.UI.Text[] _targets = { };
+		#endif
+
+
+		#region Inheritables
+
+			protected override void OnLocalized(string localizedText)
+			{
+				#if TEXTMESHPRO
+				foreach (TMPro.TMP_Text target in _targets)
+				#else
+				foreach (UnityEngine.UI.Text target in _targets)
+				#endif
+					target.text = localizedText;
+			}
+
+		#endregion
 	}
 }
 

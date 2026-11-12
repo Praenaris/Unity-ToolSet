@@ -24,7 +24,7 @@ public class BuildLocalizableEndpoint : LegacyLocalizableEndpoint
 		public override void Localize()
 		{
 			if (_enableEditorTemplate)
-				Localizer.Localize(_localizationEditorTemplate, OnLocalize).Forget();
+				Localizer.LocalizeLegacy(_localizationEditorTemplate, OnLocalize).Forget();
 			else
 				base.Localize();
 		}

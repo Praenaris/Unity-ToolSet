@@ -9,6 +9,13 @@ namespace DragonResonance.Localizer
 	public class LocalizableEvent : ALocalizable
 	{
 		public UnityEvent<string> Target = null;
+
+
+		#region Inheritables
+
+			protected override void OnLocalized(string localizedText) => this.Target?.Invoke(localizedText);
+
+		#endregion
 	}
 }
 

@@ -1,13 +1,12 @@
 #if ENABLE_LOCALIZER
 
 
-using Cysharp.Threading.Tasks;
 using DragonResonance.Attributes;
 using DragonResonance.Localizer;
 using UnityEngine;
 
 
-public class BuildLocalizableEndpoint : LegacyLocalizableEndpoint
+public class LegacyBuildLocalizableEndpoint : LegacyLocalizableEndpoint
 {
 	[SerializeField] private bool _enableEditorTemplate = false;
 	[ShowIf(nameof(_enableEditorTemplate))] [SerializeField] protected string _localizationEditorTemplate = "This is a editor {TEST}";
@@ -24,7 +23,7 @@ public class BuildLocalizableEndpoint : LegacyLocalizableEndpoint
 		public override void Localize()
 		{
 			if (_enableEditorTemplate)
-				Localizer.LocalizeLegacy(_localizationEditorTemplate, OnLocalize).Forget();
+				Localizer.Localize(_localizationEditorTemplate, OnLocalize.Invoke);
 			else
 				base.Localize();
 		}
@@ -34,7 +33,7 @@ public class BuildLocalizableEndpoint : LegacyLocalizableEndpoint
 		public override void Localize()
 		{
 			if (_enableDevelopmentTemplate)
-				Localizer.Localize(_localizationDevelopmentTemplate, OnLocalize).Forget();
+				Localizer.Localize(_localizationDevelopmentTemplate, OnLocalize.Invoke);
 			else
 				base.Localize();
 		}
@@ -44,7 +43,7 @@ public class BuildLocalizableEndpoint : LegacyLocalizableEndpoint
 		public override void Localize()
 		{
 			if (_enableDemoTemplate)
-				Localizer.Localize(_localizationDemoTemplate, OnLocalize).Forget();
+				Localizer.Localize(_localizationDemoTemplate, OnLocalize.Invoke);
 			else
 				base.Localize();
 		}

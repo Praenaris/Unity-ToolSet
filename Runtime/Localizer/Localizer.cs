@@ -39,7 +39,9 @@ namespace DragonResonance.Localizer
 				#if ((UNITY_EDITOR || DEVELOPMENT_BUILD) && ENABLE_UNITYWEBREQUEST)
 					await RetrieveOnlineData();
 				#endif
-				_currentLanguage = FirstPreferredLanguage(_currentLanguage);
+				if (_currentLanguage == SystemLanguage.Unknown)	// Unless it was changed while starting
+					_currentLanguage = FirstPreferredLanguage(_currentLanguage);
+				OnLanguageChange?.Invoke();
 			}
 
 		#endregion
@@ -51,12 +53,14 @@ namespace DragonResonance.Localizer
 			{
 				Log.Emphasis($"Language changed to {language}");
 				_currentLanguage = language;
+				if (!_starting.Task.IsCompleted) return;	// Otherwise it runs against empty data
 				OnLanguageChange?.Invoke();
 			}
 
 			public static void Subscribe(Action handler, bool refreshLocalization = false)
 			{
 				OnLanguageChange += handler;
+				if (!_starting.Task.IsCompleted) return;	// Otherwise it runs against empty data
 				if (refreshLocalization)
 					OnLanguageChange?.Invoke();
 				else
@@ -66,9 +70,11 @@ namespace DragonResonance.Localizer
 			public static void Unsubscribe(Action handler, bool refreshLocalization = false)
 			{
 				OnLanguageChange -= handler;
+				if (!_starting.Task.IsCompleted) return;	// Otherwise it runs against empty data
 				if (refreshLocalization)
 					OnLanguageChange?.Invoke();
 			}
+
 
 			public static void Localize(string template, Action<string> handler) => handler.Invoke(Localize(template));
 			public static string Localize(string template)

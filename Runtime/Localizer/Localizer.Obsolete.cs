@@ -4,7 +4,6 @@
 using Cysharp.Threading.Tasks;
 using System;
 using UnityEngine.Events;
-using UnityEngine;
 
 
 namespace DragonResonance.Localizer
@@ -12,13 +11,6 @@ namespace DragonResonance.Localizer
 	public partial class Localizer	// Obsolete
 	{
 		#region Publics
-
-			[Obsolete]
-			public static async UniTask ChangeLanguageLegacy(SystemLanguage language)
-			{
-				await _starting.Task;
-				ChangeLanguage(language);
-			}
 
 			[Obsolete]
 			public static async UniTask LocalizeLegacy(string template, UnityEvent<string> handler)

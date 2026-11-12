@@ -1,10 +1,7 @@
 #if ENABLE_LOCALIZER
 
 
-using Cysharp.Threading.Tasks;
 using DragonResonance.Behaviours;
-using System.Text.RegularExpressions;
-using UnityEngine.Events;
 using UnityEngine;
 
 
@@ -17,8 +14,8 @@ namespace DragonResonance.Localizer
 
 		#region Events
 
-			protected virtual void Awake() => Localizer.Subscribe(Localize);
-			protected virtual void OnDestroy() => Localizer.Unsubscribe(Localize);
+			protected virtual void OnEnable() => Localizer.Subscribe(Localize);
+			protected virtual void OnDisable() => Localizer.Unsubscribe(Localize);
 
 		#endregion
 

@@ -1,14 +1,14 @@
 #if UNITY_EDITOR
 
 
-using DragonResonance.Databases;
 using DragonResonance.Editor.Building;
-using DragonResonance.Extensions;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
 #if ENABLE_LOCALIZER
+using DragonResonance.Databases;
+using DragonResonance.Editor.Drawers;
+using DragonResonance.Extensions;
 using DragonResonance.Localizer;
 #endif
 
@@ -23,10 +23,22 @@ namespace DragonResonance.Editor.Settings
 	{
 		private const string SettingsPath = "Project/Praenaris/Localizer";
 		private const string BuildDefinition = "ENABLE_LOCALIZER";
+		private const float SeparatorHeight = 1f;
+		private const float DataRowHeight = 24f;
+		private const float DataButtonWidth = 64f;
+		private const int DataTitleFontSize = 16;
+		private const float DataAreaHeight = 400f;
 
+		private static readonly Color SeparatorColor = new(0.5f, 0.5f, 0.5f, 0.5f);
+		private static readonly GUIContent DataLabel = new("Data");
+		private static readonly GUIContent RefreshLabel = new("Refresh");
+		private static readonly GUIContent UpdateLabel = new("Update");
+		private static GUIStyle _dataTitleStyle_internal = null;	// Caching only, use the property instead
 
-		private Vector2 _dataViewScroll = Vector2.zero;
-		private float _dataCellWidth = 240f;
+		#if ENABLE_LOCALIZER
+		private readonly LocalizationSheetView _sheetView = new();
+		#endif
+		private bool _isBusy = false;
 
 
 		#region Constructors
@@ -54,31 +66,82 @@ namespace DragonResonance.Editor.Settings
 
 			protected override void OnAfterGUI(string searchContext)
 			{
-				#if ENABLE_LOCALIZER
-					HeaderedSheet<string> sheet = Localizer.Localizer.DataSheet;
-					GUIStyle dataCellStyle = new(UnityEngine.GUI.skin.textArea) { wordWrap = true };
+				EditorGUILayout.Space(SmallPadding);
+				EditorGUI.DrawRect(EditorGUILayout.GetControlRect(false, SeparatorHeight), SeparatorColor);
+				EditorGUILayout.Space(SmallPadding);
 
-					EditorGUILayout.LabelField("Data", EditorStyles.boldLabel);
-					if ((sheet?.Data == null) || (sheet.Data.IsEmpty()))
-						EditorGUILayout.LabelField("No data, only available on runtime", EditorStyles.centeredGreyMiniLabel);
-					else {
-						_dataCellWidth = EditorGUILayout.Slider("Cell size", _dataCellWidth, 4f, 400f);
-						_dataViewScroll = EditorGUILayout.BeginScrollView(_dataViewScroll, true, true);
-						{
-							foreach (List<string> row in sheet.Data) {
-								EditorGUILayout.BeginHorizontal();
-								{
-									foreach (string column in row) {
-										EditorGUILayout.TextArea(column, dataCellStyle, GUILayout.Width(_dataCellWidth), GUILayout.ExpandHeight(true));
-									}
-								}
-								EditorGUILayout.EndHorizontal();
-							}
-						}
-						EditorGUILayout.EndScrollView();
+				#if ENABLE_LOCALIZER
+				EditorGUILayout.BeginHorizontal();
+				{
+					GUILayout.Label(DataLabel, DataTitleStyle, GUILayout.Height(DataRowHeight));
+					GUILayout.FlexibleSpace();
+
+					EditorGUI.BeginDisabledGroup(_isBusy);
+					{
+						if (GUILayout.Button(RefreshLabel, GUILayout.Width(DataButtonWidth), GUILayout.Height(DataRowHeight)))
+							RefreshData();
+						#if ENABLE_UNITYWEBREQUEST
+						if (GUILayout.Button(UpdateLabel, GUILayout.Width(DataButtonWidth), GUILayout.Height(DataRowHeight)))
+							UpdateData();
+						#endif
 					}
+					EditorGUI.EndDisabledGroup();
+				}
+				EditorGUILayout.EndHorizontal();
+
+				EditorGUILayout.Space(SmallPadding);
+				HeaderedSheet<string> sheet = Localizer.Localizer.DataSheet;
+				if ((sheet?.Data == null) || sheet.Data.IsEmpty())
+					EditorGUILayout.LabelField("No data, Refresh to load it", EditorStyles.centeredGreyMiniLabel);
+				else
+					_sheetView.OnGUI(GUILayoutUtility.GetRect(0f, DataAreaHeight, GUILayout.ExpandWidth(true)), sheet);
 				#endif
 			}
+
+		#endregion
+
+
+		#region Privates
+
+		#if ENABLE_LOCALIZER
+			private async void RefreshData()
+			{
+				_isBusy = true;
+				try {
+					Localizer.Localizer.Settings = this.Settings;
+					await Localizer.Localizer.Reload();
+				}
+				finally {
+					_isBusy = false;
+					Repaint();
+				}
+			}
+
+			#if ENABLE_UNITYWEBREQUEST
+			private async void UpdateData()
+			{
+				_isBusy = true;
+				try {
+					Localizer.Localizer.Settings = this.Settings;
+					await Localizer.Localizer.UpdateOnlineData();
+				}
+				finally {
+					_isBusy = false;
+					Repaint();
+				}
+			}
+			#endif
+		#endif
+
+		#endregion
+
+
+		#region Properties
+
+			private static GUIStyle DataTitleStyle => (_dataTitleStyle_internal ??= new GUIStyle(EditorStyles.boldLabel) {
+				fontSize = DataTitleFontSize,
+				alignment = TextAnchor.MiddleLeft,
+			});
 
 		#endregion
 	}

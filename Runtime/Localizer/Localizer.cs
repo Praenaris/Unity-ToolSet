@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System;
 using UnityEngine.Scripting;
 using UnityEngine;
@@ -31,14 +32,15 @@ namespace DragonResonance.Localizer
 		#region Events
 
 			[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+		#if (UNITY_EDITOR && ENABLE_UNITYWEBREQUEST)
+			private static void Initialize() => Startup(onStarting: Start, onStarted: UpdateOnlineData);
+		#else
 			private static void Initialize() => Startup(onStarting: Start);
+		#endif
 
 			private static async Task Start()
 			{
 				await LoadLocalData();
-				#if ((UNITY_EDITOR || DEVELOPMENT_BUILD) && ENABLE_UNITYWEBREQUEST)
-					await RetrieveOnlineData();
-				#endif
 				if (_currentLanguage == SystemLanguage.Unknown)	// Unless it was changed while starting
 					_currentLanguage = FirstPreferredLanguage(_currentLanguage);
 				OnLanguageChange?.Invoke();
@@ -107,6 +109,14 @@ namespace DragonResonance.Localizer
 				return template;
 			}
 
+
+			public static async Task Reload()
+			{
+				_dataSheet.Clear();
+				await LoadLocalData();
+				OnLanguageChange?.Invoke();
+			}
+
 		#endregion
 
 
@@ -144,15 +154,27 @@ namespace DragonResonance.Localizer
 				ApplyBlacklistFilters();	// Once everything is merged and sanitized
 			}
 
-			private static async Task RetrieveOnlineData()
+		#if (UNITY_EDITOR && ENABLE_UNITYWEBREQUEST)
+			internal static async Task UpdateOnlineData()
 			{
-				foreach (LocalizationDataSource source in _settings.LocalizationDataSources.Where(dataSource => !string.IsNullOrEmpty(dataSource.Path)))	// Text assets only have a path in the Editor
-					await Fileman.FetchToFile(source.Url, source.Path);
+				LocalizationDataSource[] onlineSources = _settings.LocalizationDataSources
+					.Where(source => (!string.IsNullOrEmpty(source.Url) && !string.IsNullOrEmpty(source.Path)))
+					.ToArray();
+				if (onlineSources.IsEmpty()) return;
 
-				#if UNITY_EDITOR
+				CancellationToken exitToken = (Application.isPlaying ? Application.exitCancellationToken : CancellationToken.None);	// Also stops when leaving Play Mode
+				using CancellationTokenSource cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(exitToken);
+				cancellationSource.CancelAfter(TimeSpan.FromSeconds(_settings.DownloadTimeout));
+
+				CancellationToken cancellationToken = cancellationSource.Token;
+				await Task.WhenAll(onlineSources.Select(source => Fileman.FetchToFile(source.Url, source.Path, cancellationToken)));	// Failed ones are logged and left untouched
+				if (exitToken.IsCancellationRequested) return;
+
 				UnityEditor.AssetDatabase.Refresh();
-				#endif
+				await Reload();
+				Log.Info($"Localization data updated from the online sources");
 			}
+		#endif
 
 
 			private static void ApplyBlacklistFilters()

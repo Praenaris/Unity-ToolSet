@@ -16,6 +16,7 @@ namespace DragonResonance.Localizer
 		public SerializableKeyValuePair<string, string>[] BlacklistFilters = { };
 		public SystemLanguage[] LanguageFallbacks = { SystemLanguage.English, SystemLanguage.Spanish, SystemLanguage.ChineseSimplified };
 		public LocalizationDataSource[] LocalizationDataSources = { };
+		[Range(1, 60)] public int DownloadTimeout = 15;
 
 		public SystemLanguage SystemLanguage => Application.systemLanguage;
 		public IEnumerable<SystemLanguage> PreferredLanguages => new[] { this.SystemLanguage }.Concat(LanguageFallbacks);

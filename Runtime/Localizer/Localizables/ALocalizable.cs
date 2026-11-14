@@ -1,7 +1,9 @@
 #if ENABLE_LOCALIZER
 
 
+using DragonResonance.Attributes;
 using DragonResonance.Behaviours;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 
@@ -9,10 +11,21 @@ namespace DragonResonance.Localizer
 {
 	public abstract class ALocalizable : PossumBehaviour
 	{
-		[SerializeField] protected string _localizationTemplate = "This is a {TEST}";
+		private static readonly Regex NoBracesSingleToken = new(@"^[^\s\{\}]+$");
+
+		[LocalizationKey] [SerializeField] protected string _localizationTemplate = "This is a {TEST}";
+
+		[SerializeField] private bool _overrideLanguage = false;
+		[ShowIf(nameof(_overrideLanguage))] [SerializeField] private SystemLanguage _overridingLanguage = SystemLanguage.English;
 
 
 		#region Events
+
+			protected virtual void OnValidate()
+			{
+				if (!string.IsNullOrWhiteSpace(_localizationTemplate) && NoBracesSingleToken.IsMatch(_localizationTemplate))
+					_localizationTemplate = $"{{{_localizationTemplate}}}";
+			}
 
 			protected virtual void OnEnable() => Localizer.Subscribe(Localize);
 			protected virtual void OnDisable() => Localizer.Unsubscribe(Localize);
@@ -23,7 +36,7 @@ namespace DragonResonance.Localizer
 		#region Publics
 
 			[ContextMenu(nameof(Localize))]
-			public virtual void Localize() => Localizer.Localize(this.LocalizationTemplate, OnLocalized);
+			public virtual void Localize() => Localizer.Localize(this.LocalizationTemplate, this.LocalizationLanguage, OnLocalized);
 
 		#endregion
 
@@ -38,6 +51,7 @@ namespace DragonResonance.Localizer
 		#region Properties
 
 			protected virtual string LocalizationTemplate => _localizationTemplate;
+			protected SystemLanguage LocalizationLanguage => (_overrideLanguage ? _overridingLanguage : Localizer.CurrentLanguage);
 
 		#endregion
 	}

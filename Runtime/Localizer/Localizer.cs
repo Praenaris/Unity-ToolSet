@@ -78,14 +78,16 @@ namespace DragonResonance.Localizer
 			}
 
 
-			public static void Localize(string template, Action<string> handler) => handler.Invoke(Localize(template));
-			public static string Localize(string template)
+			public static void Localize(string template, Action<string> handler) => Localize(template, _currentLanguage, handler);
+			public static void Localize(string template, SystemLanguage language, Action<string> handler) => handler.Invoke(Localize(template, language));
+			public static string Localize(string template) => Localize(template, _currentLanguage);
+			public static string Localize(string template, SystemLanguage language)
 			{
-				string language = _currentLanguage.ToString();
+				string languageName = language.ToString();
 				foreach (string key in GetKeys(template)) {
 
 					// Simple keys
-					if (_dataSheet.TryGet(language, key, out string simpleValue) && !string.IsNullOrWhiteSpace(simpleValue)) {
+					if (_dataSheet.TryGet(languageName, key, out string simpleValue) && !string.IsNullOrWhiteSpace(simpleValue)) {
 						template = template.Replace($"{{{key}}}", simpleValue);
 						continue;
 					}
@@ -94,7 +96,7 @@ namespace DragonResonance.Localizer
 					int partialIndex = 1;
 					if (_dataSheet.HeadingColumn.Contains($"{key}:{partialIndex}")) {
 						StringBuilder compositeValueBuilder = new();
-						while (_dataSheet.TryGet(language, $"{key}:{partialIndex++}", out string partialValue))
+						while (_dataSheet.TryGet(languageName, $"{key}:{partialIndex++}", out string partialValue))
 							compositeValueBuilder.AppendLine(partialValue);
 
 						string compositeValue = compositeValueBuilder.ToString();
@@ -104,7 +106,7 @@ namespace DragonResonance.Localizer
 						}
 					}
 
-					Log.Error($"Key {key} not found or empty in {language} language!");
+					Log.Error($"Key {key} not found or empty in {languageName} language!");
 				}
 				return template;
 			}

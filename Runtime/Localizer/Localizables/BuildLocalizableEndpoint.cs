@@ -1,57 +1,33 @@
 #if ENABLE_LOCALIZER
 
 
-using Cysharp.Threading.Tasks;
-using DragonResonance.Behaviours;
-using System.Text.RegularExpressions;
-using UnityEngine.Events;
+using DragonResonance.Attributes;
 using UnityEngine;
 
 
 namespace DragonResonance.Localizer
 {
-	public class LegacyLocalizableEndpoint : PossumBehaviour
+	public class BuildLocalizableEndpoint : LocalizableEvent
 	{
-		[SerializeField] private bool _autoTranslateOnEnable = true;
-		[SerializeField] private bool _autoTranslateOnLanguageChange = true;
-		[SerializeField] private bool _autoWriteBraces = true;
-		[SerializeField] protected string _localizationTemplate = "This is a {TEST}";
+		[SerializeField] private bool _enableEditorTemplate = false;
+		[ShowIf(nameof(_enableEditorTemplate))] [SerializeField] private string _localizationEditorTemplate = "This is a editor {TEST}";
+
+		[SerializeField] private bool _enableDevelopmentTemplate = false;
+		[ShowIf(nameof(_enableDevelopmentTemplate))] [SerializeField] private string _localizationDevelopmentTemplate = "This is a development {TEST}";
+
+		[SerializeField] private bool _enableDemoTemplate = false;
+		[ShowIf(nameof(_enableDemoTemplate))] [SerializeField] private string _localizationDemoTemplate = "This is a demo {TEST}";
 
 
-		private static readonly Regex NoBracesSingleToken = new(@"^[^\s\{\}]+$");
-		public UnityEvent<string> OnLocalize = null;
+		#region Properties
 
-
-		#region Events
-
-			private void OnValidate()
-			{
-				if (_autoWriteBraces && !string.IsNullOrWhiteSpace(_localizationTemplate) && NoBracesSingleToken.IsMatch(_localizationTemplate))
-					_localizationTemplate = $"{{{_localizationTemplate}}}";
-			}
-
-
-			private void OnEnable()
-			{
-				if (_autoTranslateOnEnable)
-					Localize();
-				if (_autoTranslateOnLanguageChange)
-					Localizer.OnLanguageChange += Localize;
-			}
-
-			private void OnDisable()
-			{
-				if (_autoTranslateOnLanguageChange)
-					Localizer.OnLanguageChange -= Localize;
-			}
-
-		#endregion
-
-
-		#region Publics
-
-			[ContextMenu(nameof(Localize))]
-			public virtual void Localize() => Localizer.LocalizeLegacy(_localizationTemplate, OnLocalize).Forget();
+		#if UNITY_EDITOR
+			protected override string LocalizationTemplate => (_enableEditorTemplate ? _localizationEditorTemplate : _localizationTemplate);
+		#elif DEVELOPMENT_BUILD
+			protected override string LocalizationTemplate => (_enableDevelopmentTemplate ? _localizationDevelopmentTemplate : _localizationTemplate);
+		#elif DEMO_BUILD
+			protected override string LocalizationTemplate => (_enableDemoTemplate ? _localizationDemoTemplate : _localizationTemplate);
+		#endif
 
 		#endregion
 	}

@@ -23,7 +23,7 @@ namespace DragonResonance.Localizer
 		#region Publics
 
 			[ContextMenu(nameof(Localize))]
-			public virtual void Localize() => Localizer.Localize(_localizationTemplate, OnLocalized);
+			public virtual void Localize() => Localizer.Localize(this.LocalizationTemplate, OnLocalized);
 
 		#endregion
 
@@ -35,9 +35,9 @@ namespace DragonResonance.Localizer
 		#endregion
 
 
-		#region Privates
+		#region Properties
 
-			//private void Localization() => OnLocalized(Localizer.Localize(_localizationTemplate));
+			protected virtual string LocalizationTemplate => _localizationTemplate;
 
 		#endregion
 	}

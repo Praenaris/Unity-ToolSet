@@ -10,6 +10,7 @@ using DragonResonance.Databases;
 using DragonResonance.Editor.Drawers;
 using DragonResonance.Extensions;
 using DragonResonance.Localizer;
+using UnityEngine.UIElements;
 #endif
 
 
@@ -47,6 +48,21 @@ namespace DragonResonance.Editor.Settings
 			public static SettingsProvider Create() => new LocalizerSettingsProvider(SettingsPath, SettingsScope.Project);
 
 			public LocalizerSettingsProvider(string path, SettingsScope scope) : base(path, scope) { }
+
+		#endregion
+
+
+		#region Events
+
+		#if ENABLE_LOCALIZER
+			public override void OnActivate(string searchContext, VisualElement rootElement)
+			{
+				base.OnActivate(searchContext, rootElement);
+				HeaderedSheet<string> sheet = Localizer.Localizer.DataSheet;
+				if ((this.Settings != null) && ((sheet?.Data == null) || sheet.Data.IsEmpty()))	// Emptied by domain reloads, the Localizer itself only starts in Play Mode
+					RefreshData();
+			}
+		#endif
 
 		#endregion
 

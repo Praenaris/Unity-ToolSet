@@ -2,13 +2,14 @@
 
 
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 
 
 namespace DragonResonance.Localizer
 {
 	public class LocalizableEvent : ALocalizable
 	{
-		public UnityEvent<string> Target = null;
+		[FormerlySerializedAs("OnLocalize")] public UnityEvent<string> Target = null;
 
 
 		#region Inheritables

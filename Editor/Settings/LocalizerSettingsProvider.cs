@@ -82,11 +82,11 @@ namespace DragonResonance.Editor.Settings
 
 			protected override void OnAfterGUI(string searchContext)
 			{
+				#if ENABLE_LOCALIZER
 				EditorGUILayout.Space(SmallPadding);
 				EditorGUI.DrawRect(EditorGUILayout.GetControlRect(false, SeparatorHeight), SeparatorColor);
 				EditorGUILayout.Space(SmallPadding);
 
-				#if ENABLE_LOCALIZER
 				EditorGUILayout.BeginHorizontal();
 				{
 					GUILayout.Label(DataLabel, DataTitleStyle, GUILayout.Height(DataRowHeight));

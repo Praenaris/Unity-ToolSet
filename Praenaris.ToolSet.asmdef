@@ -6,6 +6,7 @@
         "Tabernero.SimpleJSON",
         "UniTask",
         "UniTask.Linq",
+        "Unity.InputSystem",
         "Unity.TextMeshPro",
         "com.rlabrecque.steamworks.net"
     ],

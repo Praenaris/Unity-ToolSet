@@ -69,11 +69,11 @@ namespace DragonResonance.Editor.Settings
 
 			protected override void OnAfterGUI(string searchContext)
 			{
+				#if ENABLE_SAVEDATA
 				EditorGUILayout.Space(SmallPadding);
 				EditorGUI.DrawRect(EditorGUILayout.GetControlRect(false, SeparatorHeight), SeparatorColor);
 				EditorGUILayout.Space(SmallPadding);
 
-				#if ENABLE_SAVEDATA
 				if (this.Settings.Slotted != _wasSlotted) {	// This refreshes the data when toggled
 					SelectSlot(this.SelectedSlot);
 					_wasSlotted = this.Settings.Slotted;

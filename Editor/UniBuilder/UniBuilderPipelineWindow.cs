@@ -499,9 +499,10 @@ namespace Praenaris.UniBuilder
 					BuildTarget.StandaloneLinux64 => ".run",
 					BuildTarget.StandaloneOSX => ".app",
 					BuildTarget.Android => (profile.IsAppBundle ? ".aab" : ".apk"),
+					BuildTarget.Switch => string.Empty,	// Unity adds .nspd / .nsp itself
 					_ => null,
 				};
-				return ((extension != null) ? Path.Combine(folder, (PlayerSettings.productName + extension)) : folder);	// Executables go inside the folder, the rest (Web...) are the folder itself
+				return ((extension != null) ? Path.Combine(folder, (PlayerSettings.productName + extension)) : folder);	// Executables and packages go inside the folder, the rest (Web...) are the folder itself
 			}
 
 			private void RefreshProfiles()

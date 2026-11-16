@@ -71,7 +71,7 @@ namespace DragonResonance.Editor.Drawers
 
 		#region Properties
 
-			protected override string UnknownItemTooltip => "Not a single key of the localization data.";
+			protected override string UnknownItemTooltip => "No key of the localization data in the text.";
 
 		#endregion
 	}

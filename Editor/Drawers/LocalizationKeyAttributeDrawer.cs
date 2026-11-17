@@ -51,7 +51,7 @@ namespace DragonResonance.Editor.Drawers
 
 		#region Privates
 
-			private static async void LoadData()
+			internal static async void LoadData()
 			{
 				if (_loadRequested) return;
 				_loadRequested = true;

@@ -21,7 +21,7 @@ using UnityEngine;
 namespace DragonResonance.Localizer
 {
 	[Preserve]
-	public partial class Localizer : ASubsystem<Localizer, LocalizerSettings>
+	public class Localizer : ASubsystem<Localizer, LocalizerSettings>
 	{
 		private static SystemLanguage _currentLanguage = SystemLanguage.Unknown;
 		private static readonly HeaderedSheet<string> _dataSheet = new();
@@ -79,11 +79,12 @@ namespace DragonResonance.Localizer
 
 
 			public static void Localize(string template, Action<string> handler) => Localize(template, _currentLanguage, handler);
-			public static void Localize(string template, SystemLanguage language, Action<string> handler) => handler.Invoke(Localize(template, language));
+			public static void Localize(string template, SystemLanguage language, Action<string> handler) => handler.Invoke(Localize(template, language.ToString()));
+			public static void Localize(string template, string languageName, Action<string> handler) => handler.Invoke(Localize(template, languageName));
 			public static string Localize(string template) => Localize(template, _currentLanguage);
-			public static string Localize(string template, SystemLanguage language)
+			public static string Localize(string template, SystemLanguage language) => Localize(template, language.ToString());
+			public static string Localize(string template, string languageName)
 			{
-				string languageName = language.ToString();
 				foreach (string key in GetKeys(template)) {
 
 					// Simple keys

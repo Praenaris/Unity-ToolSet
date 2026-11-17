@@ -1,6 +1,7 @@
 #if UNITY_EDITOR && ENABLE_SOUNDER
 
 
+using DragonResonance.Logging;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,17 +12,28 @@ namespace DragonResonance.Sounder
 	public class SounderCueEditor : UnityEditor.Editor
 	{
 		private const string PlayLabel = "Play";
+		private const string StopLabel = "Stop";
 
 
 		#region Publics
+
+			public override bool RequiresConstantRepaint() => EditorSounderPreview.IsPlaying;
 
 			public override void OnInspectorGUI()
 			{
 				base.OnInspectorGUI();
 
 				EditorGUILayout.Separator();
-				if (GUILayout.Button(PlayLabel))
-					Play();
+				EditorGUILayout.BeginHorizontal();
+				{
+					if (GUILayout.Button(PlayLabel))
+						Play();
+					using (new EditorGUI.DisabledScope(!EditorSounderPreview.IsPlaying)) {
+						if (GUILayout.Button(StopLabel))
+							EditorSounderPreview.StopAll();
+					}
+				}
+				EditorGUILayout.EndHorizontal();
 			}
 
 		#endregion
@@ -29,7 +41,22 @@ namespace DragonResonance.Sounder
 
 		#region Privates
 
-			private void Play() { }	// TODO
+			private void Play()
+			{
+				AudioSourceConfig audioSourceConfig = ((SounderCue)base.target).GetRandomConfig();
+				if (!EditorApplication.isPlaying) {
+					EditorSounderPreview.Play(audioSourceConfig);
+					return;
+				}
+
+				if (SounderSettings.TryGetInstance(out SounderSettings _) && SounderPool.TryGetInstance(out SounderPool _)) {
+					Sounder.Play(audioSourceConfig);
+				}
+				else {
+					Log.Warning("Sounder is not ready (settings not loaded or no pool in the scene), previewing it outside of the pool");
+					EditorSounderPreview.Play(audioSourceConfig);
+				}
+			}
 
 		#endregion
 	}

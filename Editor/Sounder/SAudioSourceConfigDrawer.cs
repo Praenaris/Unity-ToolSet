@@ -7,15 +7,15 @@ using UnityEngine;
 
 namespace DragonResonance.Sounder
 {
-	[CustomPropertyDrawer(typeof(SAudioSourceConfig))]
+	[CustomPropertyDrawer(typeof(AudioSourceConfig))]
 	public class SAudioSourceConfigDrawer : PropertyDrawer
 	{
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			EditorGUI.BeginProperty(position, label, property);
 			{
-				SerializedProperty audioResourceProperty = property.FindPropertyRelative(nameof(SAudioSourceConfig.AudioResource));
-				SerializedProperty audioMixerGroupProperty = property.FindPropertyRelative(nameof(SAudioSourceConfig.AudioMixerGroup));
+				SerializedProperty audioResourceProperty = property.FindPropertyRelative(nameof(AudioSourceConfig.AudioResource));
+				SerializedProperty audioMixerGroupProperty = property.FindPropertyRelative(nameof(AudioSourceConfig.AudioMixerGroup));
 
 				position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
 

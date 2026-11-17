@@ -1,6 +1,7 @@
 #if ENABLE_SOUNDER
 
 
+using DragonResonance.Extensions;
 using UnityEngine.Audio;
 using UnityEngine;
 
@@ -12,6 +13,16 @@ namespace DragonResonance.Sounder
 	{
 		[SerializeField] private AudioResource[] _audioResources = { };
 		[SerializeField] private AudioMixerGroup _audioMixerGroup = null;
+
+
+		#region Publics
+
+			public AudioSourceConfig GetRandomConfig() => new() {
+				AudioResource = (_audioResources.IsEmpty() ? null : _audioResources.Random()),
+				AudioMixerGroup = _audioMixerGroup,
+			};
+
+		#endregion
 
 
 		#region Properties

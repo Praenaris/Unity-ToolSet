@@ -8,7 +8,7 @@ using UnityEngine.Audio;
 namespace DragonResonance.Sounder
 {
 	[Serializable]
-	public struct SAudioSourceConfig
+	public struct AudioSourceConfig
 	{
 		public AudioResource AudioResource;
 		public AudioMixerGroup AudioMixerGroup;

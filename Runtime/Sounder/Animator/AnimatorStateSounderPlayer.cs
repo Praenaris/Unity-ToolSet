@@ -8,8 +8,8 @@ namespace DragonResonance.Sounder
 {
 	public class AnimatorStateSounderPlayer : StateMachineBehaviour
 	{
-		[SerializeField] private SAudioSourceConfig _stateEnterConfig = default;
-		[SerializeField] private SAudioSourceConfig _stateExitConfig = default;
+		[SerializeField] private AudioSourceConfig _stateEnterConfig = default;
+		[SerializeField] private AudioSourceConfig _stateExitConfig = default;
 
 		public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex) =>
 			Sounder.Play(_stateEnterConfig);

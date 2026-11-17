@@ -1,17 +1,58 @@
-#if ENABLE_SOUNDER
+#if UNITY_EDITOR && ENABLE_SOUNDER
 
 
-using System;
-using UnityEngine.Audio;
+using UnityEditor;
+using UnityEngine;
 
 
 namespace DragonResonance.Sounder
 {
-	[Serializable]
-	public struct SAudioSourceConfig
+	[CustomEditor(typeof(SounderCue))]
+	public class SounderCueEditor : UnityEditor.Editor
 	{
-		public AudioResource AudioResource;
-		public AudioMixerGroup AudioMixerGroup;
+		private const string PlayLabel = "Play";
+		private const string RestartLabel = "Restart";
+		private const string StopLabel = "Stop";
+
+
+		#region Publics
+
+			public override bool RequiresConstantRepaint() => EditorSounderPreview.IsPlaying;
+
+			public override void OnInspectorGUI()
+			{
+				base.OnInspectorGUI();
+
+				EditorGUILayout.Separator();
+				EditorGUILayout.BeginHorizontal();
+				{
+					if (GUILayout.Button(PlayLabel))
+						Play();
+					if (GUILayout.Button(RestartLabel))
+						Restart();
+					using (new EditorGUI.DisabledScope(!EditorSounderPreview.IsPlaying)) {
+						if (GUILayout.Button(StopLabel))
+							Stop();
+					}
+				}
+				EditorGUILayout.EndHorizontal();
+			}
+
+		#endregion
+
+
+		#region Privates
+
+			private void Play() => EditorSounderPreview.Play(((SounderCue)base.target).GetConfig());
+			private void Stop() => EditorSounderPreview.StopAll();
+
+			private void Restart()
+			{
+				Stop();
+				Play();
+			}
+
+		#endregion
 	}
 }
 

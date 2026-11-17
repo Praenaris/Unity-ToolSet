@@ -36,31 +36,28 @@ namespace DragonResonance.Sounder
 
 		#region Publics
 
-			public static void Play(SAudioSourceConfig audioSourceConfig) =>
+			public static void Play(AudioSourceConfig audioSourceConfig) =>
 				PlayAndAwait(audioSourceConfig).Forget();
 
-			public static void Play(SAudioSourceConfig audioSourceConfig, AudioSource audioSource) =>
+			public static void Play(AudioSourceConfig audioSourceConfig, AudioSource audioSource) =>
 				SetupPooledAudioSource(audioSourceConfig, audioSource);
 
 
-			public static async UniTask PlayAndAwait(SAudioSourceConfig audioSourceConfig)
+			public static async UniTask PlayAndAwait(AudioSourceConfig audioSourceConfig)
 			{
 				await _starting.Task;
 				AudioSource audioSource = SetupPooledAudioSource(audioSourceConfig);
 				await SounderPool.Current.ReleaseWhenDoneAsync(audioSource);
 			}
 
-			public static async UniTask PlayAndAwait(SAudioSourceConfig audioSourceConfig, AudioSource audioSource)
+			public static async UniTask PlayAndAwait(AudioSourceConfig audioSourceConfig, AudioSource audioSource)
 			{
 				SetupPooledAudioSource(audioSourceConfig, audioSource);
-				if (audioSourceConfig.AudioResource is AudioClip)
-					await UniTask.WaitUntil(audioSource.HasAudioClipStopped);
-				else
-					await UniTask.WaitUntil(audioSource.HasAudioResourceStopped);
+				await UniTask.WaitUntil(audioSource.HasStopped);
 			}
 
 
-			public static async UniTask<AudioSource> PlayAndGet(SAudioSourceConfig audioSourceConfig, bool autoReleaseWhenDone = true)
+			public static async UniTask<AudioSource> PlayAndGet(AudioSourceConfig audioSourceConfig, bool autoReleaseWhenDone = true)
 			{	// ReSharper disable MethodHasAsyncOverload
 				await _starting.Task;
 				AudioSource audioSource = SetupPooledAudioSource(audioSourceConfig);
@@ -78,9 +75,9 @@ namespace DragonResonance.Sounder
 
 		#region Privates
 
-			private static AudioSource SetupPooledAudioSource(SAudioSourceConfig audioSourceConfig) =>
+			private static AudioSource SetupPooledAudioSource(AudioSourceConfig audioSourceConfig) =>
 				SetupPooledAudioSource(audioSourceConfig, SounderPool.Instance.Get());
-			private static AudioSource SetupPooledAudioSource(SAudioSourceConfig audioSourceConfig, AudioSource audioSource)
+			private static AudioSource SetupPooledAudioSource(AudioSourceConfig audioSourceConfig, AudioSource audioSource)
 			{
 				audioSource.resource = audioSourceConfig.AudioResource;
 				audioSource.outputAudioMixerGroup = audioSourceConfig.AudioMixerGroup;

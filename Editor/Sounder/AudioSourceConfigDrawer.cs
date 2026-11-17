@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DragonResonance.Sounder
 {
 	[CustomPropertyDrawer(typeof(AudioSourceConfig))]
-	public class SAudioSourceConfigDrawer : PropertyDrawer
+	public class AudioSourceConfigDrawer : PropertyDrawer
 	{
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{

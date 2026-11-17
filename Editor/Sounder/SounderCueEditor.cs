@@ -1,7 +1,6 @@
 #if UNITY_EDITOR && ENABLE_SOUNDER
 
 
-using DragonResonance.Logging;
 using UnityEditor;
 using UnityEngine;
 
@@ -44,27 +43,8 @@ namespace DragonResonance.Sounder
 
 		#region Privates
 
-			private void Play()
-			{
-				AudioSourceConfig audioSourceConfig = ((SounderCue)base.target).GetConfig();
-				if (!EditorApplication.isPlaying) {
-					EditorSounderPreview.Play(audioSourceConfig);
-					return;
-				}
-
-				if (SounderSettings.TryGetInstance(out SounderSettings _) && SounderPool.TryGetInstance(out SounderPool _)) {
-					Sounder.Play(audioSourceConfig);
-				}
-				else {
-					Log.Warning("Sounder is not ready (settings not loaded or no pool in the scene), previewing it outside of the pool");
-					EditorSounderPreview.Play(audioSourceConfig);
-				}
-			}
-
-			private void Stop()
-			{
-				EditorSounderPreview.StopAll();
-			}
+			private void Play() => EditorSounderPreview.Play(((SounderCue)base.target).GetConfig());
+			private void Stop() => EditorSounderPreview.StopAll();
 
 			private void Restart()
 			{

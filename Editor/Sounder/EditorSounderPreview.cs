@@ -2,6 +2,7 @@
 
 
 using DragonResonance.Extensions;
+using DragonResonance.Logging;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace DragonResonance.Sounder
 		private const string PreviewObjectName = "SounderPreviewAudioSource";
 
 		private static readonly List<AudioSource> _audioSources = new();
+		private static readonly HashSet<AudioSource> _pooledAudioSources = new();
 
 
 		#region Constructors
@@ -57,12 +59,8 @@ namespace DragonResonance.Sounder
 
 			public static AudioSource Play(AudioSourceConfig audioSourceConfig)
 			{
-				GameObject gameObject = EditorUtility.CreateGameObjectWithHideFlags(PreviewObjectName, HideFlags.HideAndDontSave, typeof(AudioSource));
-				AudioSource audioSource = gameObject.GetComponent<AudioSource>();
-				audioSource.playOnAwake = false;
-				audioSource.resource = audioSourceConfig.AudioResource;
-				audioSource.outputAudioMixerGroup = audioSourceConfig.AudioMixerGroup;
-				audioSource.Play();
+				AudioSource audioSource = GetAudioSource();
+				Sounder.Play(audioSourceConfig, audioSource);
 
 				if (_audioSources.IsEmpty())
 					EditorApplication.update += OnEditorUpdate;
@@ -75,6 +73,7 @@ namespace DragonResonance.Sounder
 				foreach (AudioSource audioSource in _audioSources)
 					Release(audioSource);
 				_audioSources.Clear();
+				_pooledAudioSources.Clear();
 				EditorApplication.update -= OnEditorUpdate;
 			}
 
@@ -83,9 +82,33 @@ namespace DragonResonance.Sounder
 
 		#region Privates
 
+			private static AudioSource GetAudioSource()
+			{
+				if (EditorApplication.isPlaying) {
+					if (SounderPool.TryGetInstance(out SounderPool pool)) {
+						AudioSource pooledAudioSource = pool.Get();
+						_pooledAudioSources.Add(pooledAudioSource);
+						return pooledAudioSource;
+					}
+
+					Log.Warning("There is no SounderPool in the scene, previewing it outside of the pool");
+				}
+
+				GameObject gameObject = EditorUtility.CreateGameObjectWithHideFlags(PreviewObjectName, HideFlags.HideAndDontSave, typeof(AudioSource));
+				AudioSource audioSource = gameObject.GetComponent<AudioSource>();
+				audioSource.playOnAwake = false;
+				return audioSource;
+			}
+
 			private static void Release(AudioSource audioSource)
 			{
-				if (audioSource != null)
+				if (_pooledAudioSources.Remove(audioSource)) {
+					if ((audioSource != null) && SounderPool.TryGetInstance(out SounderPool pool)) {
+						audioSource.Stop();
+						pool.Release(audioSource);
+					}
+				}
+				else if (audioSource != null)
 					UnityObject.DestroyImmediate(audioSource.gameObject);
 			}
 

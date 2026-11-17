@@ -1,30 +1,39 @@
-#if ENABLE_LOCALIZER
+#if UNITY_EDITOR && ENABLE_LOCALIZER
 
 
-using Cysharp.Threading.Tasks;
-using System;
-using UnityEngine.Events;
+using DragonResonance.Databases;
+using DragonResonance.Localizer;
+using Praenaris.Editor.Attributes;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 
 
-namespace DragonResonance.Localizer
+namespace DragonResonance.Editor.Drawers
 {
-	public partial class Localizer	// Obsolete
+	[CustomPropertyDrawer(typeof(LocalizationColumnAttribute))]
+	public class LocalizationColumnAttributeDrawer : AComboBoxAttributeDrawer
 	{
-		#region Publics
+		#region Inheritables
 
-			[Obsolete]
-			public static async UniTask LocalizeLegacy(string template, UnityEvent<string> handler)
+			protected override IEnumerable<string> GetItems(SerializedProperty property)
 			{
-				await _starting.Task;
-				handler.Invoke(Localize(template));
+				HeaderedSheet<string> sheet = Localizer.Localizer.DataSheet;
+				if (sheet.RowCount == 0) {
+					LocalizationKeyAttributeDrawer.LoadData();
+					return Enumerable.Empty<string>();	// The items will be ready in the next editor update
+				}
+
+				string keysHeading = Localizer.Localizer.Settings.KeysHeading;
+				return sheet.HeadingRow.Where(heading => !string.IsNullOrWhiteSpace(heading) && (heading != keysHeading));
 			}
 
-			[Obsolete]
-			public static async UniTask<string> LocalizeLegacy(string template)
-			{
-				await _starting.Task;
-				return Localize(template);
-			}
+		#endregion
+
+
+		#region Properties
+
+			protected override string UnknownItemTooltip => "No column of the localization data in the text.";
 
 		#endregion
 	}

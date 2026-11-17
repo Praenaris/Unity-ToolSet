@@ -110,7 +110,7 @@ namespace DragonResonance.Editor.Settings
 				if ((sheet?.Data == null) || sheet.Data.IsEmpty())
 					EditorGUILayout.LabelField("No data, Refresh to load it", EditorStyles.centeredGreyMiniLabel);
 				else
-					_sheetView.OnGUI(GUILayoutUtility.GetRect(0f, DataAreaHeight, GUILayout.ExpandWidth(true)), sheet);
+					_sheetView.OnGUI(GUILayoutUtility.GetRect(0f, DataAreaHeight, GUILayout.ExpandWidth(true)), sheet, this.Settings.KeysHeading);
 				#endif
 			}
 

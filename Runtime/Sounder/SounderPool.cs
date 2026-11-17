@@ -37,12 +37,7 @@ namespace DragonResonance.Sounder
 			public async UniTask ReleaseWhenDoneAsync(AudioSource audioSourceItem)
 			{
 				CancellationToken cancellationToken = audioSourceItem.GetCancellationTokenOnDestroy();
-
-				if (audioSourceItem.resource is AudioClip)
-					await UniTask.WaitUntil(audioSourceItem.HasAudioClipStopped, cancellationToken:cancellationToken);
-				else
-					await UniTask.WaitUntil(audioSourceItem.HasAudioResourceStopped, cancellationToken:cancellationToken);
-
+				await UniTask.WaitUntil(audioSourceItem.HasStopped, cancellationToken:cancellationToken);
 				Release(audioSourceItem);
 			}
 

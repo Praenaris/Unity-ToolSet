@@ -33,7 +33,7 @@ Editor/
 ├── Drawers/               property drawers / custom editors for the subsystem data
 ├── Settings/              Project Settings providers under Project/Praenaris/…
 ├── Sounder/               AudioSourceConfig drawer, SounderCue inspector, EditorSounderPreview
-└── Toolbars/              Unity 6.3 main toolbar elements (MainToolbarElement): time scale slider + reset (Play Mode only), Project Settings button
+└── Toolbars/              Unity 6.3 main toolbar elements (MainToolbarElement): time scale slider + reset and Localizer language dropdown (Play Mode only, the dropdown needs `ENABLE_LOCALIZER`), Project Settings button
 Resources/[SteamManager].prefab
 ```
 

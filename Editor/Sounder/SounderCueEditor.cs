@@ -12,6 +12,7 @@ namespace DragonResonance.Sounder
 	public class SounderCueEditor : UnityEditor.Editor
 	{
 		private const string PlayLabel = "Play";
+		private const string RestartLabel = "Restart";
 		private const string StopLabel = "Stop";
 
 
@@ -28,9 +29,11 @@ namespace DragonResonance.Sounder
 				{
 					if (GUILayout.Button(PlayLabel))
 						Play();
+					if (GUILayout.Button(RestartLabel))
+						Restart();
 					using (new EditorGUI.DisabledScope(!EditorSounderPreview.IsPlaying)) {
 						if (GUILayout.Button(StopLabel))
-							EditorSounderPreview.StopAll();
+							Stop();
 					}
 				}
 				EditorGUILayout.EndHorizontal();
@@ -43,7 +46,7 @@ namespace DragonResonance.Sounder
 
 			private void Play()
 			{
-				AudioSourceConfig audioSourceConfig = ((SounderCue)base.target).GetRandomConfig();
+				AudioSourceConfig audioSourceConfig = ((SounderCue)base.target).GetConfig();
 				if (!EditorApplication.isPlaying) {
 					EditorSounderPreview.Play(audioSourceConfig);
 					return;
@@ -56,6 +59,17 @@ namespace DragonResonance.Sounder
 					Log.Warning("Sounder is not ready (settings not loaded or no pool in the scene), previewing it outside of the pool");
 					EditorSounderPreview.Play(audioSourceConfig);
 				}
+			}
+
+			private void Stop()
+			{
+				EditorSounderPreview.StopAll();
+			}
+
+			private void Restart()
+			{
+				Stop();
+				Play();
 			}
 
 		#endregion

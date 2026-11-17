@@ -11,14 +11,22 @@ namespace DragonResonance.Sounder
 	[CreateAssetMenu(menuName = "Praenaris/Sounder/Cue", fileName = "New Sounder Cue")]
 	public class SounderCue : ScriptableObject
 	{
-		[SerializeField] private AudioResource[] _audioResources = { };
+		//[SerializeField] private AudioResource[] _audioResources = { };
+		[SerializeField] private AudioResource _audioResource = null;
 		[SerializeField] private AudioMixerGroup _audioMixerGroup = null;
 
 
 		#region Publics
 
-			public AudioSourceConfig GetRandomConfig() => new() {
+			public void Play() => Sounder.Play(GetConfig());
+
+			/*public AudioSourceConfig GetConfig() => new() {
 				AudioResource = (_audioResources.IsEmpty() ? null : _audioResources.Random()),
+				AudioMixerGroup = _audioMixerGroup,
+			};*/
+
+			public AudioSourceConfig GetConfig() => new() {
+				AudioResource = _audioResource,
 				AudioMixerGroup = _audioMixerGroup,
 			};
 
@@ -27,7 +35,8 @@ namespace DragonResonance.Sounder
 
 		#region Properties
 
-			public AudioResource[] AudioResources => _audioResources;
+			//public AudioResource[] AudioResources => _audioResources;
+			public AudioResource AudioResource => _audioResource;
 			public AudioMixerGroup AudioMixerGroup => _audioMixerGroup;
 
 		#endregion

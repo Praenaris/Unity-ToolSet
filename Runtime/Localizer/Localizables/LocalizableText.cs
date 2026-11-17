@@ -12,6 +12,20 @@ namespace DragonResonance.Localizer
 		#endif
 
 
+		#region Events
+
+			protected virtual void Reset()
+			{
+				#if TEXTMESHPRO
+					_targets = GetComponents<TMPro.TMP_Text>();
+				#else
+					_targets = GetComponents<UnityEngine.UI.Text>();
+				#endif
+			}
+
+		#endregion
+
+
 		#region Inheritables
 
 			protected override void OnLocalized(string localizedText)

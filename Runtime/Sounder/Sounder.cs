@@ -53,10 +53,7 @@ namespace DragonResonance.Sounder
 			public static async UniTask PlayAndAwait(AudioSourceConfig audioSourceConfig, AudioSource audioSource)
 			{
 				SetupPooledAudioSource(audioSourceConfig, audioSource);
-				if (audioSourceConfig.AudioResource is AudioClip)
-					await UniTask.WaitUntil(audioSource.HasAudioClipStopped);
-				else
-					await UniTask.WaitUntil(audioSource.HasAudioResourceStopped);
+				await UniTask.WaitUntil(audioSource.HasStopped);
 			}
 
 

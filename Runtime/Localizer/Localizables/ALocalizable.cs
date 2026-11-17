@@ -15,8 +15,8 @@ namespace DragonResonance.Localizer
 
 		[LocalizationKey] [SerializeField] protected string _localizationTemplate = "This is a {TEST}";
 
-		[SerializeField] private bool _overrideLanguage = false;
-		[ShowIf(nameof(_overrideLanguage))] [SerializeField] private SystemLanguage _overridingLanguage = SystemLanguage.English;
+		[SerializeField] private bool _overrideColumn = false;
+		[ShowIf(nameof(_overrideColumn))] [LocalizationColumn] [SerializeField] private string _overridingColumn = nameof(SystemLanguage.English);
 
 
 		#region Events
@@ -36,7 +36,7 @@ namespace DragonResonance.Localizer
 		#region Publics
 
 			[ContextMenu(nameof(Localize))]
-			public virtual void Localize() => Localizer.Localize(this.LocalizationTemplate, this.LocalizationLanguage, OnLocalized);
+			public virtual void Localize() => Localizer.Localize(this.LocalizationTemplate, this.LocalizationColumn, OnLocalized);
 
 		#endregion
 
@@ -51,7 +51,7 @@ namespace DragonResonance.Localizer
 		#region Properties
 
 			protected virtual string LocalizationTemplate => _localizationTemplate;
-			protected SystemLanguage LocalizationLanguage => (_overrideLanguage ? _overridingLanguage : Localizer.CurrentLanguage);
+			protected string LocalizationColumn => (_overrideColumn ? _overridingColumn : Localizer.CurrentLanguage.ToString());
 
 		#endregion
 	}

@@ -2,8 +2,10 @@
 
 
 using DragonResonance.Databases;
+using DragonResonance.Extensions;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor;
@@ -18,13 +20,17 @@ namespace DragonResonance.Editor.Drawers
 		private const float LanguageColumnWidth = 240f;
 		private const float MinColumnWidth = 40f;
 
+		private const string CopyCommand = "Copy";
+
 		private static readonly Color EmptyCellColor = new(0.9f, 0.2f, 0.2f, 0.25f);
+		private static readonly Regex CompositePartSuffix = new(@":\d+$");
 
 		private readonly SearchField _searchField = new();
 		private HeaderedSheet<string> _sheet = null;
 		private List<string> _headingRow = null;
 		private int _columnCount = 0;
 		private int _rowCount = 0;
+		private int _keysColumn = 0;
 
 
 		#region Constructors
@@ -41,10 +47,12 @@ namespace DragonResonance.Editor.Drawers
 
 		#region Publics
 
-			public void OnGUI(Rect position, HeaderedSheet<string> sheet)
+			public void OnGUI(Rect position, HeaderedSheet<string> sheet, string keysHeading)
 			{
 				if (HasChanged(sheet))
 					Rebuild(sheet);
+				_keysColumn = sheet.GetHeadingColumnIndex(keysHeading).ClampLowerZero();	// The first column if not found
+				HandleCopyCommand();
 
 				float searchHeight = EditorGUIUtility.singleLineHeight;
 				float tableY = (position.y + searchHeight + EditorGUIUtility.standardVerticalSpacing);
@@ -89,6 +97,14 @@ namespace DragonResonance.Editor.Drawers
 				}
 			}
 
+			protected override void ContextClickedItem(int id)
+			{
+				IList<int> rowIds = (base.GetSelection().Contains(id) ? base.GetSelection() : new[] { id });
+				GenericMenu menu = new();
+				menu.AddItem(new GUIContent((rowIds.Count == 1) ? "Copy Key" : "Copy Keys"), false, () => CopyKeys(rowIds));
+				menu.ShowAsContext();
+			}
+
 			protected override bool DoesItemMatchSearch(TreeViewItem<int> item, string search) =>
 				_sheet.Data[item.id].Any(cell => ((cell != null) && cell.Contains(search, StringComparison.OrdinalIgnoreCase)));
 
@@ -120,6 +136,32 @@ namespace DragonResonance.Editor.Drawers
 					.ToArray();
 				base.multiColumnHeader = new MultiColumnHeader(new MultiColumnHeaderState(columns));
 				base.Reload();
+			}
+
+
+			private void HandleCopyCommand()	// Ctrl+C, or whatever the Editor maps to Copy
+			{
+				Event currentEvent = Event.current;
+				if ((currentEvent.commandName != CopyCommand) || !base.HasFocus() || !base.HasSelection()) return;
+
+				if (currentEvent.type == EventType.ExecuteCommand)
+					CopyKeys(base.GetSelection());
+				if ((currentEvent.type == EventType.ValidateCommand) || (currentEvent.type == EventType.ExecuteCommand))
+					currentEvent.Use();
+			}
+
+			private void CopyKeys(IEnumerable<int> rowIds) =>	// One per line, in sheet order, composite parts merged
+				EditorGUIUtility.systemCopyBuffer = string.Join("\n", rowIds
+					.OrderBy(rowId => rowId)
+					.Select(GetKey)
+					.Where(key => !string.IsNullOrWhiteSpace(key))
+					.Distinct());
+
+			private string GetKey(int rowId)
+			{
+				if (rowId >= _sheet.RowCount) return null;
+				List<string> row = _sheet.Data[rowId];
+				return ((_keysColumn < row.Count) ? CompositePartSuffix.Replace((row[_keysColumn] ?? string.Empty), string.Empty) : null);
 			}
 
 

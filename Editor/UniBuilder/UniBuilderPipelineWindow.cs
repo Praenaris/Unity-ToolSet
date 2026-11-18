@@ -499,7 +499,7 @@ namespace Praenaris.UniBuilder
 					BuildTarget.StandaloneLinux64 => ".run",
 					BuildTarget.StandaloneOSX => ".app",
 					BuildTarget.Android => (profile.IsAppBundle ? ".aab" : ".apk"),
-					BuildTarget.Switch => string.Empty,	// Unity adds .nspd / .nsp itself
+					BuildTarget.Switch => (profile.IsSwitchRomFile ? ".nsp" : string.Empty),	// The extension picks a ROM file or an NSPD folder
 					_ => null,
 				};
 				return ((extension != null) ? Path.Combine(folder, (PlayerSettings.productName + extension)) : folder);	// Executables and packages go inside the folder, the rest (Web...) are the folder itself
@@ -604,6 +604,7 @@ namespace Praenaris.UniBuilder
 			public readonly string Platform;
 			public readonly string Development;
 			public readonly bool IsAppBundle;
+			public readonly bool IsSwitchRomFile;
 
 
 			public ProfileInfo(string guid, BuildProfile profile)
@@ -612,6 +613,7 @@ namespace Praenaris.UniBuilder
 				BuildTarget target = (BuildTarget)serializedProfile.FindProperty("m_BuildTarget").intValue;
 				SerializedProperty development = serializedProfile.FindProperty("m_PlatformBuildProfile.m_Development");
 				SerializedProperty appBundle = serializedProfile.FindProperty("m_PlatformBuildProfile.m_BuildAppBundle");	// Android only
+				SerializedProperty switchRomFile = serializedProfile.FindProperty("m_PlatformBuildProfile.m_SwitchCreateRomFile");	// Switch only
 
 				Guid = guid;
 				Profile = profile;
@@ -621,6 +623,7 @@ namespace Praenaris.UniBuilder
 					: target.ToString());
 				Development = ((development == null) ? "Unknown" : (development.boolValue ? "Yes" : "No"));
 				IsAppBundle = ((appBundle != null) && appBundle.boolValue);
+				IsSwitchRomFile = ((switchRomFile != null) && switchRomFile.boolValue);
 			}
 		}
 	}

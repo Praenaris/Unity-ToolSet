@@ -12,7 +12,7 @@ namespace DragonResonance.Localizer
 		#if TEXTMESHPRO
 		public List<TMPro.TMP_Text> _targets = new();
 		#else
-		public List<UnityEngine.UI.Text> _targets = { };
+		public List<UnityEngine.UI.Text> _targets = new();
 		#endif
 
 

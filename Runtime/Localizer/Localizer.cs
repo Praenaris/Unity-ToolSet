@@ -139,18 +139,23 @@ namespace DragonResonance.Localizer
 			private static async Task LoadLocalData()
 			{
 				foreach (LocalizationDataSource source in _settings.LocalizationDataSources) {
-					switch (source.Type) {
-						case LocalizationDataType.TextAsset:
-							_dataSheet.JoinTSV(source.Content);
-							break;
+					try {
+						switch (source.Type) {
+							case LocalizationDataType.TextAsset:
+								_dataSheet.JoinTSV(source.Content);
+								break;
 
-						case LocalizationDataType.StreamingAsset:
-							_dataSheet.JoinTSV(await File.ReadAllTextAsync(source.Path));
-							break;
+							case LocalizationDataType.StreamingAsset:
+								_dataSheet.JoinTSV(await File.ReadAllTextAsync(source.Path));
+								break;
 
-						default:
-							Debug.LogError($"Type {source.Type} undefined");
-							break;
+							default:
+								Log.Error($"Type {source.Type} undefined");
+								break;
+						}
+					}
+					catch (Exception exception) {	// A broken source never stops the others
+						Log.Exception(exception, $"The localization data source {source.Type} at {source.Path} couldn't be loaded, skipped");
 					}
 				}
 

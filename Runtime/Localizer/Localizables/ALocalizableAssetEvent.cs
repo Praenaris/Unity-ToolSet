@@ -39,7 +39,7 @@ namespace DragonResonance.Localizer
 				if (asset == null)
 					Error($"No {typeof(TAsset).Name} at Resources/{resourcePath} for the {base.LocalizationColumn} column");
 				else
-					this.Target.Invoke(asset);
+					this.Target?.Invoke(asset);
 			}
 
 		#endregion

@@ -1,14 +1,18 @@
 #if ENABLE_LOCALIZER
 
 
+using System.Collections.Generic;
+using System.Linq;
+
+
 namespace DragonResonance.Localizer
 {
 	public class LocalizableText : ALocalizable
 	{
 		#if TEXTMESHPRO
-		public TMPro.TMP_Text[] _targets = { };
+		public List<TMPro.TMP_Text> _targets = new();
 		#else
-		public UnityEngine.UI.Text[] _targets = { };
+		public List<UnityEngine.UI.Text> _targets = { };
 		#endif
 
 
@@ -17,9 +21,9 @@ namespace DragonResonance.Localizer
 			protected virtual void Reset()
 			{
 				#if TEXTMESHPRO
-					_targets = GetComponents<TMPro.TMP_Text>();
+					_targets = GetComponents<TMPro.TMP_Text>().ToList();
 				#else
-					_targets = GetComponents<UnityEngine.UI.Text>();
+					_targets = GetComponents<UnityEngine.UI.Text>().ToList();
 				#endif
 			}
 

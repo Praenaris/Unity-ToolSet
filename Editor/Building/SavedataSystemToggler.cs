@@ -1,15 +1,16 @@
 #if UNITY_EDITOR
 
 
+using DragonResonance.Editor.Building;
 using UnityEditor;
 
 
-namespace DragonResonance.Editor.Building
+namespace Praenaris.Editor.Building
 {
 	[InitializeOnLoad]
 	public static class SavedataSystemToggler
 	{
-		private const string SUBSYSTEM_DEFINE = "_ENABLE_SAVEDATA";
+		public const string SUBSYSTEM_DEFINE = "_ENABLE_SAVEDATA";
 
 
 		#region Constructors
@@ -26,7 +27,7 @@ namespace DragonResonance.Editor.Building
 			#else
 				[MenuItem("Subsystems/Savedata [OFF]/Enable Savedata")]
 			#endif
-			public static void SwitchSubsystem() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
+			public static void Toggle() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
 
 		#endregion
 	}

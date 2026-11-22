@@ -1,3 +1,8 @@
+#if (UNITY_SWITCH)
+	#define FILEMAN_FORCE_PLAYERPREFS
+#endif
+
+
 using DragonResonance.Logging;
 using System.IO;
 using System.Text;

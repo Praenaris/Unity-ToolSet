@@ -1,12 +1,9 @@
-#if ENABLE_SAVEDATA
-
-
 using System.IO;
 using System;
 using UnityEngine;
 
 
-namespace Praenaris.Savedata
+namespace Praenaris.Tools
 {
 	public static class SavedataRootPathExtensions
 	{
@@ -22,6 +19,7 @@ namespace Praenaris.Savedata
 				SavedataRootPath.PersistentData => Application.persistentDataPath,
 				SavedataRootPath.TemporaryCache => Application.temporaryCachePath,
 				SavedataRootPath.UserProfile => GetFolderPath(Environment.SpecialFolder.UserProfile),
+				SavedataRootPath.PlayerPrefs => Fileman.PlayerPrefsRoot,
 				_ => Application.persistentDataPath
 			};
 
@@ -39,9 +37,6 @@ namespace Praenaris.Savedata
 		#endregion
 	}
 }
-
-
-#endif
 
 
 /*                                                                                                                */

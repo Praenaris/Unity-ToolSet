@@ -23,32 +23,32 @@ namespace Praenaris.Tools
 			}
 
 
-			public static async Task<string> ReadFromFile(string sourcePath, CancellationToken cancellationToken = default) =>
-				await ReadFromFile(sourcePath, Encoding.UTF8, cancellationToken);
-			public static async Task<string> ReadFromFile(string sourcePath, Encoding encoding, CancellationToken cancellationToken = default)
+			public static async Task<string> ReadFromStorage(string sourcePath, CancellationToken cancellationToken = default) =>
+				await ReadFromStorage(sourcePath, Encoding.UTF8, cancellationToken);
+			public static async Task<string> ReadFromStorage(string sourcePath, Encoding encoding, CancellationToken cancellationToken = default)
 			{
 				if (!File.Exists(sourcePath)) return null;
 				return await File.ReadAllTextAsync(sourcePath, encoding, cancellationToken);
 			}
 
 		#if UNITY_EDITOR
-			public static async Task<string> ReadFromEditorAsset(TextAsset sourceAsset, CancellationToken cancellationToken = default) =>
-				await ReadFromEditorAsset(sourceAsset, Encoding.UTF8, cancellationToken);
-			public static async Task<string> ReadFromEditorAsset(TextAsset sourceAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
-				await ReadFromFile(UnityEditor.AssetDatabase.GetAssetPath(sourceAsset), encoding, cancellationToken);
+			public static async Task<string> ReadFromAsset(TextAsset sourceAsset, CancellationToken cancellationToken = default) =>
+				await ReadFromAsset(sourceAsset, Encoding.UTF8, cancellationToken);
+			public static async Task<string> ReadFromAsset(TextAsset sourceAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
+				await ReadFromStorage(UnityEditor.AssetDatabase.GetAssetPath(sourceAsset), encoding, cancellationToken);
 		#endif
 
 
-			public static async Task WriteToFile(string content, string targetPath, CancellationToken cancellationToken = default) =>
-				await WriteToFile(content, targetPath, Encoding.UTF8, cancellationToken);
-			public static async Task WriteToFile(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default) =>
+			public static async Task WriteToStorage(string content, string targetPath, CancellationToken cancellationToken = default) =>
+				await WriteToStorage(content, targetPath, Encoding.UTF8, cancellationToken);
+			public static async Task WriteToStorage(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default) =>
 				await File.WriteAllTextAsync(targetPath, content, encoding, cancellationToken);
 
 		#if UNITY_EDITOR
-			public static async Task WriteToEditorAsset(string content, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
-				await WriteToEditorAsset(content, targetAsset, Encoding.UTF8, cancellationToken);
-			public static async Task WriteToEditorAsset(string content, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
-				await WriteToFile(content, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
+			public static async Task WriteToAsset(string content, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
+				await WriteToAsset(content, targetAsset, Encoding.UTF8, cancellationToken);
+			public static async Task WriteToAsset(string content, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
+				await WriteToStorage(content, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
 		#endif
 
 		#endregion
@@ -62,7 +62,7 @@ namespace Praenaris.Tools
 			{
 				string content = await FetchWebResource(url, cancellationToken);
 				if (content == null) return;
-				await WriteToFile(content, targetPath, encoding, cancellationToken);
+				await WriteToStorage(content, targetPath, encoding, cancellationToken);
 			}
 
 		#if UNITY_EDITOR

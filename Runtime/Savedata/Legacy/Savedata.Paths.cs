@@ -3,7 +3,6 @@
 
 using Praenaris.Tools;
 using System.IO;
-using System;
 using UnityEngine;
 
 
@@ -13,23 +12,30 @@ namespace Praenaris.SavedataLegacy
 	{
 		#region Publics
 
-			public static string GetOptimizedPersistentDataPath() => GetOptimizedPersistentDataPath(".");
-			public static string GetOptimizedPersistentDataPath(string path) => GetOptimizedPersistentDataPath(".", path);
-			public static string GetOptimizedPersistentDataPath(string path, string filename)
+			public static string GetStoragePath(string filePath) => (Fileman.ForcePlayerPrefs ?
+				Fileman.ResolvePath(
+					SavedataRootPath.PlayerPrefs,
+					Path.Join(Application.companyName, Application.productName, filePath)) :
+				GetOptimizedPersistentDataPath(filePath));
+
+		#endregion
+
+
+		#region Privates
+
+			internal static string GetOptimizedPersistentDataPath() => GetOptimizedPersistentDataPath(".");
+			internal static string GetOptimizedPersistentDataPath(string path) => GetOptimizedPersistentDataPath(".", path);
+			internal static string GetOptimizedPersistentDataPath(string path, string filename)
 			{
 				string optimizedPersistentDataPath = Application.persistentDataPath;
 
 				#if UNITY_STANDALONE_WIN
 					optimizedPersistentDataPath = Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+						System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
 						Application.companyName, Application.productName);
-				#elif UNITY_STANDALONE_LINUX
+				#elif UNITY_STANDALONE_LINUX || UNITY_STANDALONE_OSX
 					optimizedPersistentDataPath = Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-						Application.companyName, Application.productName);
-				#elif UNITY_STANDALONE_OSX
-					optimizedPersistentDataPath = Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+						System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
 						Application.companyName, Application.productName);
 				#endif
 

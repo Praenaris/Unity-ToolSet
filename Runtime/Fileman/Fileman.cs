@@ -17,41 +17,78 @@ namespace Praenaris.Tools
 {
 	public static class Fileman
 	{
+		public const string PlayerPrefsRoot = "<PlayerPrefs>";
+		public static readonly Encoding DefaultEncoding = new UTF8Encoding(false);	// UTF-8 without BOM
+
+	#if FILEMAN_FORCE_PLAYERPREFS
+		public static readonly bool ForcePlayerPrefs = true;
+	#else
+		public static readonly bool ForcePlayerPrefs = false;
+	#endif
+
+
 		#region Local
 
-			public static bool Exists(string path) => File.Exists(path);
+			public static bool Exists(SavedataRootPath root, string relativePath) => Exists(ResolvePath(root, relativePath));
+			public static bool Exists(string path) => IsPlayerPrefsPath(path) ? PlayerPrefs.HasKey(path) : File.Exists(path);
 
+			public static void Delete(SavedataRootPath root, string relativePath) => Delete(ResolvePath(root, relativePath));
 			public static void Delete(string path)
 			{
-				if (File.Exists(path))
+				if (IsPlayerPrefsPath(path)) {
+					PlayerPrefs.DeleteKey(path);
+					PlayerPrefs.Save();
+				}
+				else if (File.Exists(path))
 					File.Delete(path);
 			}
 
 
+			public static async Task<string> ReadFromStorage(SavedataRootPath root, string relativePath, CancellationToken cancellationToken = default) =>
+				await ReadFromStorage(root, relativePath, DefaultEncoding, cancellationToken);
+			public static async Task<string> ReadFromStorage(SavedataRootPath root, string relativePath, Encoding encoding, CancellationToken cancellationToken = default) =>
+				await ReadFromStorage(ResolvePath(root, relativePath), encoding, cancellationToken);
 			public static async Task<string> ReadFromStorage(string sourcePath, CancellationToken cancellationToken = default) =>
-				await ReadFromStorage(sourcePath, Encoding.UTF8, cancellationToken);
+				await ReadFromStorage(sourcePath, DefaultEncoding, cancellationToken);
 			public static async Task<string> ReadFromStorage(string sourcePath, Encoding encoding, CancellationToken cancellationToken = default)
 			{
-				if (!File.Exists(sourcePath)) return null;
-				return await File.ReadAllTextAsync(sourcePath, encoding, cancellationToken);
+				if (IsPlayerPrefsPath(sourcePath))
+					return (PlayerPrefs.HasKey(sourcePath) ? PlayerPrefs.GetString(sourcePath) : null);
+
+				if (File.Exists(sourcePath))
+					return await File.ReadAllTextAsync(sourcePath, encoding, cancellationToken);
+
+				return null;
 			}
 
 		#if UNITY_EDITOR
 			public static async Task<string> ReadFromAsset(TextAsset sourceAsset, CancellationToken cancellationToken = default) =>
-				await ReadFromAsset(sourceAsset, Encoding.UTF8, cancellationToken);
+				await ReadFromAsset(sourceAsset, DefaultEncoding, cancellationToken);
 			public static async Task<string> ReadFromAsset(TextAsset sourceAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
 				await ReadFromStorage(UnityEditor.AssetDatabase.GetAssetPath(sourceAsset), encoding, cancellationToken);
 		#endif
 
 
+			public static async Task WriteToStorage(string content, SavedataRootPath root, string relativePath, CancellationToken cancellationToken = default) =>
+				await WriteToStorage(content, root, relativePath, DefaultEncoding, cancellationToken);
+			public static async Task WriteToStorage(string content, SavedataRootPath root, string relativePath, Encoding encoding, CancellationToken cancellationToken = default) =>
+				await WriteToStorage(content, ResolvePath(root, relativePath), encoding, cancellationToken);
 			public static async Task WriteToStorage(string content, string targetPath, CancellationToken cancellationToken = default) =>
-				await WriteToStorage(content, targetPath, Encoding.UTF8, cancellationToken);
-			public static async Task WriteToStorage(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default) =>
-				await File.WriteAllTextAsync(targetPath, content, encoding, cancellationToken);
+				await WriteToStorage(content, targetPath, DefaultEncoding, cancellationToken);
+			public static async Task WriteToStorage(string content, string targetPath, Encoding encoding, CancellationToken cancellationToken = default)
+			{
+				if (IsPlayerPrefsPath(targetPath)) {
+					PlayerPrefs.SetString(targetPath, content);
+					PlayerPrefs.Save();
+				}
+				else {
+					await File.WriteAllTextAsync(targetPath, content, encoding, cancellationToken);
+				}
+			}
 
 		#if UNITY_EDITOR
 			public static async Task WriteToAsset(string content, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
-				await WriteToAsset(content, targetAsset, Encoding.UTF8, cancellationToken);
+				await WriteToAsset(content, targetAsset, DefaultEncoding, cancellationToken);
 			public static async Task WriteToAsset(string content, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
 				await WriteToStorage(content, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
 		#endif
@@ -62,7 +99,7 @@ namespace Praenaris.Tools
 		#region Online
 
 			public static async Task FetchToFile(string url, string targetPath, CancellationToken cancellationToken = default) =>
-				await FetchToFile(url, targetPath, Encoding.UTF8, cancellationToken);
+				await FetchToFile(url, targetPath, DefaultEncoding, cancellationToken);
 			public static async Task FetchToFile(string url, string targetPath, Encoding encoding, CancellationToken cancellationToken = default)
 			{
 				string content = await FetchWebResource(url, cancellationToken);
@@ -72,7 +109,7 @@ namespace Praenaris.Tools
 
 		#if UNITY_EDITOR
 			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, CancellationToken cancellationToken = default) =>
-				await FetchToEditorAsset(url, targetAsset, Encoding.UTF8, cancellationToken);
+				await FetchToEditorAsset(url, targetAsset, DefaultEncoding, cancellationToken);
 			public static async Task FetchToEditorAsset(string url, TextAsset targetAsset, Encoding encoding, CancellationToken cancellationToken = default) =>
 				await FetchToFile(url, UnityEditor.AssetDatabase.GetAssetPath(targetAsset), encoding, cancellationToken);
 		#endif
@@ -95,6 +132,20 @@ namespace Praenaris.Tools
 					Log.Exception(exception, $"Exception fetching source {url}");
 					return null;
 				}
+			}
+
+		#endregion
+
+
+		#region Paths
+
+			public static bool IsPlayerPrefsPath(string path) => path.StartsWith(PlayerPrefsRoot, StringComparison.Ordinal);
+
+			public static string ResolvePath(SavedataRootPath root, string relativePath)
+			{
+				if (ForcePlayerPrefs || (root == SavedataRootPath.PlayerPrefs))
+					return Path.Join(PlayerPrefsRoot, relativePath).Replace('\\', '/');	// Standard path naming
+				return Path.GetFullPath(Path.Join(root.Resolve(), ".", relativePath));
 			}
 
 		#endregion

@@ -1,7 +1,4 @@
-#if ENABLE_SAVEDATA
-
-
-namespace Praenaris.Savedata
+namespace Praenaris.Tools
 {
 	public enum SavedataRootPath
 	{
@@ -14,11 +11,9 @@ namespace Praenaris.Savedata
 		PersistentData,	// Unity's Application.persistentDataPath
 		TemporaryCache,	// Unity's Application.temporaryCachePath
 		UserProfile,	// %USERPROFILE% · ~
+		PlayerPrefs,	// PlayerPrefs
 	}
 }
-
-
-#endif
 
 
 /*                                                                                                                */

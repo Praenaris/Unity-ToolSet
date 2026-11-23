@@ -4,10 +4,10 @@
 using Cysharp.Threading.Tasks;
 using DragonResonance.Extensions;
 using DragonResonance.Logging;
+using Praenaris.Tools;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
@@ -50,10 +50,10 @@ namespace Praenaris.SavedataLegacy
 
 				_data.Clear();
 				foreach (string filePath in Savedata.FilePaths) {
-					string dataFilePath = GetOptimizedPersistentDataPath(filePath);
-					if (!File.Exists(dataFilePath)) continue;
+					string dataFilePath = GetStoragePath(filePath);
+					if (!Fileman.Exists(dataFilePath)) continue;
 
-					string content = await File.ReadAllTextAsync(dataFilePath, Encoding.UTF8);
+					string content = await Fileman.ReadFromStorage(dataFilePath);
 					JSONNode jsonNode = JSONNode.Parse(content);
 
 					foreach (KeyValuePair<string, JSONNode> jsonDataKeyValuePair in jsonNode)
@@ -76,7 +76,7 @@ namespace Praenaris.SavedataLegacy
 					HashSet<string> processedKeys = new();
 					JSONNode temporalJsonNode = null;
 					string persistentDataPath = GetOptimizedPersistentDataPath();
-					if (!Directory.CreateDirectory(persistentDataPath).Exists) return;
+					if (!Fileman.ForcePlayerPrefs && !Directory.CreateDirectory(persistentDataPath).Exists) return;
 
 					// Overrides
 					foreach (SFilePathOverride savableOverride in _settings.Overrides) {
@@ -86,9 +86,9 @@ namespace Praenaris.SavedataLegacy
 								temporalJsonNode.Add(key, _data[key]);
 							processedKeys.Add(key);
 						}
-						await File.WriteAllTextAsync(
-							Path.Combine(persistentDataPath, savableOverride.FilePath),
-							temporalJsonNode.ToString(_settings.UseCompactData));
+						await Fileman.WriteToStorage(
+							temporalJsonNode.ToString(_settings.UseCompactData),
+							GetStoragePath(savableOverride.FilePath));
 					}
 
 					// Default
@@ -96,9 +96,9 @@ namespace Praenaris.SavedataLegacy
 					foreach (KeyValuePair<string, JSONNode> keyValuePair in _data.Where(dataEntryPair => !processedKeys.Contains(dataEntryPair.Key))) {
 						temporalJsonNode.Add(keyValuePair.Key, keyValuePair.Value);
 					}
-					await File.WriteAllTextAsync(
-						Path.Combine(persistentDataPath, _settings.DefaultFilePath),
-						temporalJsonNode.ToString(_settings.UseCompactData));
+					await Fileman.WriteToStorage(
+						temporalJsonNode.ToString(_settings.UseCompactData),
+						GetStoragePath(_settings.DefaultFilePath));
 				}
 				finally {
 					_saveSemaphore.Release();

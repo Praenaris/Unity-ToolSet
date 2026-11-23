@@ -119,7 +119,7 @@ namespace Praenaris.Savedata
 			{
 				Log.Info($"Reading {filePath} ...");
 				try {
-					string content = await Fileman.ReadFromFile(filePath);
+					string content = await Fileman.ReadFromStorage(filePath);
 					if (string.IsNullOrWhiteSpace(content)) {
 						Log.Info($"No savedata found at \"{filePath}\", starting empty");
 						return JSONNode.New();
@@ -143,7 +143,7 @@ namespace Praenaris.Savedata
 			{
 				Log.Info($"Writing {filePath} ...");
 				try {
-					await Fileman.WriteToFile(json.ToString(_settings.SaveCompactData), filePath);
+					await Fileman.WriteToStorage(json.ToString(_settings.SaveCompactData), filePath);
 				}
 				catch (Exception exception) {
 					Log.Exception(exception, $"Exception saving the savedata at \"{filePath}\"");

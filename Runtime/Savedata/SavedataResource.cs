@@ -1,6 +1,7 @@
 #if ENABLE_SAVEDATA
 
 
+using Praenaris.Tools;
 using System.IO;
 using System;
 using UnityEngine;
@@ -23,11 +24,15 @@ namespace Praenaris.Savedata
 
 		internal string FormatFullPath(string slotId)
 		{
-			string rootPath = Path.Join(this.Root.Resolve(), this.Company ? Application.companyName : null, this.Product ? Application.productName : null);
-			string path = Path.Join(rootPath, ".", this.RelativePath);
+			string relativePath = Path.Join(
+				this.Company ? Application.companyName : null,
+				this.Product ? Application.productName : null,
+				this.RelativePath);
 			if (this.Slotted)
-				path = Path.Join(Path.GetDirectoryName(path), $"{Path.GetFileNameWithoutExtension(path)}_{slotId}{Path.GetExtension(path)}");
-			return Path.GetFullPath(path);
+				relativePath = Path.Join(
+					Path.GetDirectoryName(relativePath),
+					$"{Path.GetFileNameWithoutExtension(relativePath)}_{slotId}{Path.GetExtension(relativePath)}");
+			return Fileman.ResolvePath(this.Root, relativePath);
 		}
 	}
 }

@@ -1,40 +1,33 @@
-#if ENABLE_SAVEDATA
+#if UNITY_EDITOR
 
 
-using System.IO;
-using System;
-using UnityEngine;
+using DragonResonance.Editor.Building;
+using UnityEditor;
 
 
-namespace Praenaris.Savedata
+namespace Praenaris.Editor.Building
 {
-	public static class SavedataRootPathExtensions
+	[InitializeOnLoad]
+	public static class FilemanForcePlayerPrefsToggler
 	{
-		#region Publics
+		public const string FORCE_PLAYERPREFS_DEFINE = "_FILEMAN_FORCE_PLAYERPREFS";
 
-			public static string Resolve(this SavedataRootPath rootPath) => rootPath switch {
-				SavedataRootPath.AppData => GetFolderPath(Environment.SpecialFolder.ApplicationData),
-				SavedataRootPath.CommonAppData => GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-				SavedataRootPath.Desktop => GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
-				SavedataRootPath.GameFolder => Path.GetDirectoryName(Application.dataPath),
-				SavedataRootPath.LocalAppData => GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-				SavedataRootPath.MyDocuments => GetFolderPath(Environment.SpecialFolder.MyDocuments),
-				SavedataRootPath.PersistentData => Application.persistentDataPath,
-				SavedataRootPath.TemporaryCache => Application.temporaryCachePath,
-				SavedataRootPath.UserProfile => GetFolderPath(Environment.SpecialFolder.UserProfile),
-				_ => Application.persistentDataPath
-			};
+
+		#region Constructors
+
+			static FilemanForcePlayerPrefsToggler() => BuildDefines.SetDefinition(FORCE_PLAYERPREFS_DEFINE, false);
 
 		#endregion
 
 
-		#region Privates
+		#region Publics
 
-			private static string GetFolderPath(Environment.SpecialFolder specialFolder)
-			{
-				string folderPath = Environment.GetFolderPath(specialFolder);
-				return string.IsNullOrEmpty(folderPath) ? Application.persistentDataPath : folderPath;
-			}
+			#if FILEMAN_FORCE_PLAYERPREFS
+				[MenuItem("Subsystems/Fileman Force PlayerPrefs [ON]/Stop forcing PlayerPrefs on Fileman")]
+			#else
+				[MenuItem("Subsystems/Fileman Force PlayerPrefs [OFF]/Force PlayerPrefs on Fileman")]
+			#endif
+			public static void Toggle() => BuildDefines.ToggleBuildDefinition(FORCE_PLAYERPREFS_DEFINE);
 
 		#endregion
 	}

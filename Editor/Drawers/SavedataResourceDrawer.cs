@@ -3,6 +3,7 @@
 
 using DragonResonance.Logging;
 using Praenaris.Savedata;
+using Praenaris.Tools;
 using System.IO;
 using System;
 using UnityEditor;
@@ -152,8 +153,9 @@ namespace DragonResonance.Editor.Drawers
 		private static string GetFullPathPreview(SavedataResource resource, out bool isValid)
 		{
 			try {
-				isValid = true;
-				return resource.FormatFullPath(SLOT_PREVIEW_ID);
+				string fullPath = resource.FormatFullPath(SLOT_PREVIEW_ID);
+				isValid = !Fileman.IsPlayerPrefsPath(fullPath);	// A PlayerPrefs key has no folder to open
+				return fullPath;
 			}
 			catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException) {
 				isValid = false;

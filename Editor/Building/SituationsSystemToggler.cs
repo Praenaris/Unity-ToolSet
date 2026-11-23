@@ -1,15 +1,16 @@
 #if UNITY_EDITOR
 
 
+using DragonResonance.Editor.Building;
 using UnityEditor;
 
 
-namespace DragonResonance.Editor.Building
+namespace Praenaris.Editor.Building
 {
 	[InitializeOnLoad]
 	public static class SituationsSystemToggler
 	{
-		private const string SUBSYSTEM_DEFINE = "_ENABLE_SITUATIONS";
+		public const string SUBSYSTEM_DEFINE = "_ENABLE_SITUATIONS";
 
 
 		#region Constructors
@@ -26,7 +27,7 @@ namespace DragonResonance.Editor.Building
 			#else
 				[MenuItem("Subsystems/Situations [OFF]/Enable Situations")]
 			#endif
-			public static void SwitchSubsystem() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
+			public static void Toggle() => BuildDefines.ToggleBuildDefinition(SUBSYSTEM_DEFINE);
 
 		#endregion
 	}

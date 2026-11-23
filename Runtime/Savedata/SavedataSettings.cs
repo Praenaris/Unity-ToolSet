@@ -35,6 +35,9 @@ namespace Praenaris.Savedata
 		};
 		public SavedataResource[] ResourceOverrides = { };
 
+		[Header("Debugging")]
+		public bool SkipWrites = false;
+
 
 		public int FirstSlot => _firstSlot;
 		public int MaxSlots => Slotted ? _maxSlots : -1;

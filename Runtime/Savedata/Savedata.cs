@@ -141,6 +141,11 @@ namespace Praenaris.Savedata
 
 			private static async Task SaveResource(string filePath, JSONNode json)
 			{
+				if (_settings.SkipWrites) {
+					Log.Warning($"Writing {filePath} skipped, Skip Writes is on in the settings");
+					return;
+				}
+
 				Log.Info($"Writing {filePath} ...");
 				try {
 					await Fileman.WriteToStorage(json.ToString(_settings.SaveCompactData), filePath);

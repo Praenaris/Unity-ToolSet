@@ -73,6 +73,11 @@ namespace Praenaris.SavedataLegacy
 					Log.Info("Saving...");
 					await _loading.Task;
 
+					if (_settings.SkipWrites) {
+						Log.Warning("Saving skipped, Skip Writes is on in the settings");
+						return;
+					}
+
 					HashSet<string> processedKeys = new();
 					JSONNode temporalJsonNode = null;
 					if (!Fileman.ForcePlayerPrefs && !Directory.CreateDirectory(GetOptimizedPersistentDataPath()).Exists) return;

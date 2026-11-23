@@ -75,8 +75,7 @@ namespace Praenaris.SavedataLegacy
 
 					HashSet<string> processedKeys = new();
 					JSONNode temporalJsonNode = null;
-					string persistentDataPath = GetOptimizedPersistentDataPath();
-					if (!Fileman.ForcePlayerPrefs && !Directory.CreateDirectory(persistentDataPath).Exists) return;
+					if (!Fileman.ForcePlayerPrefs && !Directory.CreateDirectory(GetOptimizedPersistentDataPath()).Exists) return;
 
 					// Overrides
 					foreach (SFilePathOverride savableOverride in _settings.Overrides) {

@@ -23,9 +23,9 @@ namespace Praenaris.Editor.Building
 		#region Publics
 
 			#if FILEMAN_FORCE_PLAYERPREFS
-				[MenuItem("Subsystems/Fileman Force PlayerPrefs [ON]/Stop forcing PlayerPrefs on Fileman")]
+				[MenuItem("Subsystems/Fileman/Force PlayerPrefs [ON]/Stop forcing PlayerPrefs")]
 			#else
-				[MenuItem("Subsystems/Fileman Force PlayerPrefs [OFF]/Force PlayerPrefs on Fileman")]
+				[MenuItem("Subsystems/Fileman/Force PlayerPrefs [OFF]/Force PlayerPrefs")]
 			#endif
 			public static void Toggle() => BuildDefines.ToggleBuildDefinition(FORCE_PLAYERPREFS_DEFINE);
 

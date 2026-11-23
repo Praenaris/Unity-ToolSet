@@ -15,6 +15,9 @@ namespace Praenaris.SavedataLegacy
 		[Min(0)] public int ThreadTimeoutMilliseconds = 0;
 		public string DefaultFilePath = "savedata.json";
 		public SFilePathOverride[] Overrides = { };
+
+		[Header("Debugging")]
+		public bool SkipWrites = false;
 	}
 }
 
